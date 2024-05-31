@@ -1,5 +1,23 @@
 const stream = require('streamx')
 
+exports.pipeline = stream.pipeline
+
+exports.Readable = class Readable extends stream.Readable {
+  constructor (opts = {}) {
+    super(opts)
+
+    if (this._construct) this._open = this._construct
+
+    if (this._read !== stream.Readable.prototype._read) {
+      this._read = read.bind(this, this._read)
+    }
+
+    if (this._destroy !== stream.Stream.prototype._destroy) {
+      this._destroy = destroy.bind(this, this._destroy)
+    }
+  }
+}
+
 exports.Writable = class Writable extends stream.Writable {
   constructor (opts = {}) {
     super({ ...opts, mapWritable })
@@ -7,35 +25,75 @@ exports.Writable = class Writable extends stream.Writable {
     if (this._construct) this._open = this._construct
 
     if (this._writev !== stream.Writable.prototype._writev) {
-      this._writev = adaptWritev(this._writev)
+      this._writev = writev.bind(this, this._writev)
     }
 
     if (this._write !== stream.Writable.prototype._write) {
-      this._write = adaptWrite(this._write)
+      this._write = write.bind(this, this._write)
     }
 
-    if (this._destroy !== stream.Writable.prototype._destroy) {
-      this._destroy = adaptDestroy(this._destroy)
+    if (this._destroy !== stream.Stream.prototype._destroy) {
+      this._destroy = destroy.bind(this, this._destroy)
     }
   }
 }
 
-function adaptWritev (writev) {
-  return function (batch, cb) {
-    writev(batch.map(chunk => ({ chunk, encoding: 'buffer' })), cb)
+exports.Duplex = class Duplex extends stream.Duplex {
+  constructor (opts = {}) {
+    super({ ...opts, mapWritable })
+
+    if (this._construct) this._open = this._construct
+
+    if (this._read !== stream.Readable.prototype._read) {
+      this._read = read.bind(this, this._read)
+    }
+
+    if (this._writev !== stream.Duplex.prototype._writev) {
+      this._writev = writev.bind(this, this._writev)
+    }
+
+    if (this._write !== stream.Duplex.prototype._write) {
+      this._write = write.bind(this, this._write)
+    }
+
+    if (this._destroy !== stream.Stream.prototype._destroy) {
+      this._destroy = destroy.bind(this, this._destroy)
+    }
   }
 }
 
-function adaptWrite (write) {
-  return function (data, cb) {
-    write(data, 'buffer', cb)
+exports.Transform = class Transform extends stream.Transform {
+  constructor (opts = {}) {
+    super({ ...opts, mapWritable })
+
+    if (this._transform !== stream.Transform.prototype._transform) {
+      this._transform = transform.bind(this, this._transform)
+    }
   }
 }
 
-function adaptDestroy (destroy) {
-  return function (cb) {
-    destroy(stream.getStreamError(this), cb)
-  }
+exports.PassThrough = class PassThrough extends exports.Transform {}
+
+function read (read, cb) {
+  read.call(this, 65536)
+
+  cb(null)
+}
+
+function writev (writev, batch, cb) {
+  writev.call(this, batch.map(chunk => ({ chunk, encoding: 'buffer' })), cb)
+}
+
+function write (write, data, cb) {
+  write.call(this, data, 'buffer', cb)
+}
+
+function transform (transform, data, cb) {
+  transform.call(this, data, 'buffer', cb)
+}
+
+function destroy (destroy, cb) {
+  destroy.call(this, stream.getStreamError(this), cb)
 }
 
 function mapWritable (data) {

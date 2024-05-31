@@ -4,10 +4,12 @@
   "description": "Streaming data for JavaScript",
   "exports": {
     ".": "./index.js",
-    "./package": "./package.json"
+    "./package": "./package.json",
+    "./promises": "./promises.js"
   },
   "files": [
-    "index.js"
+    "index.js",
+    "promises.js"
   ],
   "scripts": {
     "test": "standard"
