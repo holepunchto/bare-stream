@@ -17,6 +17,25 @@ test('readable', (t) => {
   stream.on('data', (data) => t.alike(data, Buffer.from('hello')))
 })
 
+test('readable, async', (t) => {
+  t.plan(1)
+
+  let i = 0
+
+  const stream = new Readable({
+    read () {
+      if (i++ === 3) this.push(null)
+      else setTimeout(() => this.push(i.toString()), 10)
+    }
+  })
+
+  const read = []
+
+  stream
+    .on('data', (data) => read.push(data.toString()))
+    .on('end', () => t.alike(read, ['1', '2', '3']))
+})
+
 test('readable, destroy', (t) => {
   t.plan(2)
 
