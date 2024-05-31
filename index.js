@@ -4,7 +4,7 @@ exports.pipeline = stream.pipeline
 
 exports.Readable = class Readable extends stream.Readable {
   constructor (opts = {}) {
-    super(opts)
+    super({ ...opts, mapReadable: map })
 
     if (this._construct) this._open = this._construct
 
@@ -20,7 +20,7 @@ exports.Readable = class Readable extends stream.Readable {
 
 exports.Writable = class Writable extends stream.Writable {
   constructor (opts = {}) {
-    super({ ...opts, mapWritable })
+    super({ ...opts, mapWritable: map })
 
     if (this._construct) this._open = this._construct
 
@@ -40,7 +40,7 @@ exports.Writable = class Writable extends stream.Writable {
 
 exports.Duplex = class Duplex extends stream.Duplex {
   constructor (opts = {}) {
-    super({ ...opts, mapWritable })
+    super({ ...opts, map })
 
     if (this._construct) this._open = this._construct
 
@@ -64,7 +64,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
 exports.Transform = class Transform extends stream.Transform {
   constructor (opts = {}) {
-    super({ ...opts, mapWritable })
+    super({ ...opts, map })
 
     if (this._transform !== stream.Transform.prototype._transform) {
       this._transform = transform.bind(this, this._transform)
@@ -96,6 +96,6 @@ function destroy (destroy, cb) {
   destroy.call(this, stream.getStreamError(this), cb)
 }
 
-function mapWritable (data) {
+function map (data) {
   return typeof data === 'string' ? Buffer.from(data) : data
 }
