@@ -49,6 +49,24 @@ test('readable, destroy with error', (t) => {
     .destroy(new Error('boom'))
 })
 
+test('readable, encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Readable({
+    read (size) {
+      t.is(this, stream)
+      t.is(typeof size, 'number')
+
+      this.push(Buffer.from('hello'))
+      this.push(null)
+    }
+  })
+
+  stream.setEncoding('utf8')
+
+  stream.on('data', (data) => t.is(data, 'hello'))
+})
+
 test('writable', (t) => {
   t.plan(3)
 
@@ -168,6 +186,24 @@ test('duplex, destroy', (t) => {
   stream.destroy()
 })
 
+test('duplex, encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Duplex({
+    read (size) {
+      t.is(this, stream)
+      t.is(typeof size, 'number')
+
+      this.push(Buffer.from('hello'))
+      this.push(null)
+    }
+  })
+
+  stream.setEncoding('utf8')
+
+  stream.on('data', (data) => t.is(data, 'hello'))
+})
+
 test('duplex, destroy with error', (t) => {
   t.plan(3)
 
@@ -199,4 +235,26 @@ test('transform', (t) => {
   })
 
   stream.write('hello')
+})
+
+test('transform, encoding', (t) => {
+  t.plan(4)
+
+  const stream = new Transform({
+    transform (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'buffer')
+
+      this.push(data)
+
+      cb(null)
+    }
+  })
+
+  stream.setEncoding('utf8')
+
+  stream
+    .on('data', (data) => t.is(data, 'hello'))
+    .write('hello')
 })

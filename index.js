@@ -16,6 +16,12 @@ exports.Readable = class Readable extends stream.Readable {
       this._destroy = destroy.bind(this, this._destroy)
     }
   }
+
+  setEncoding (encoding) {
+    this._readableState.map = null
+
+    return super.setEncoding(encoding)
+  }
 }
 
 exports.Writable = class Writable extends stream.Writable {
@@ -60,6 +66,12 @@ exports.Duplex = class Duplex extends stream.Duplex {
       this._destroy = destroy.bind(this, this._destroy)
     }
   }
+
+  setEncoding (encoding) {
+    this._readableState.map = null
+
+    return super.setEncoding(encoding)
+  }
 }
 
 exports.Transform = class Transform extends stream.Transform {
@@ -69,6 +81,12 @@ exports.Transform = class Transform extends stream.Transform {
     if (this._transform !== stream.Transform.prototype._transform) {
       this._transform = transform.bind(this, this._transform)
     }
+  }
+
+  setEncoding (encoding) {
+    this._readableState.map = null
+
+    return super.setEncoding(encoding)
   }
 }
 

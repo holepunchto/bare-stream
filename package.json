@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/holepunchto/bare-stream#readme",
   "dependencies": {
-    "streamx": "^2.16.1"
+    "streamx": "^2.18.0"
   },
   "devDependencies": {
     "brittle": "^3.5.2",
