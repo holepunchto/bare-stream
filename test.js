@@ -68,7 +68,7 @@ test('readable, destroy with error', (t) => {
     .destroy(new Error('boom'))
 })
 
-test('readable, encoding', (t) => {
+test('readable, set encoding', (t) => {
   t.plan(3)
 
   const stream = new Readable({
@@ -84,6 +84,22 @@ test('readable, encoding', (t) => {
   stream.setEncoding('utf8')
 
   stream.on('data', (data) => t.is(data, 'hello'))
+})
+
+test('readable, push with encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Readable({
+    read (size) {
+      t.is(this, stream)
+      t.is(typeof size, 'number')
+
+      this.push('\xab\xcd', 'ascii')
+      this.push(null)
+    }
+  })
+
+  stream.on('data', (data) => t.alike(data, Buffer.from([0xab, 0xcd])))
 })
 
 test('writable', (t) => {
@@ -149,6 +165,22 @@ test('writable, destroy with error', (t) => {
     .destroy(new Error('boom'))
 })
 
+test('writable, write with encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Writable({
+    write (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from([0xab, 0xcd]))
+      t.is(encoding, 'buffer')
+
+      cb(null)
+    }
+  })
+
+  stream.write('\xab\xcd', 'ascii')
+})
+
 test('duplex', (t) => {
   t.plan(6)
 
@@ -205,7 +237,24 @@ test('duplex, destroy', (t) => {
   stream.destroy()
 })
 
-test('duplex, encoding', (t) => {
+test('duplex, destroy with error', (t) => {
+  t.plan(3)
+
+  const stream = new Duplex({
+    destroy (err, cb) {
+      t.is(this, stream)
+      t.is(err.message, 'boom')
+
+      cb(null)
+    }
+  })
+
+  stream
+    .on('error', (err) => t.is(err.message, 'boom'))
+    .destroy(new Error('boom'))
+})
+
+test('duplex, set encoding', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
@@ -223,21 +272,36 @@ test('duplex, encoding', (t) => {
   stream.on('data', (data) => t.is(data, 'hello'))
 })
 
-test('duplex, destroy with error', (t) => {
+test('duplex, push with encoding', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    destroy (err, cb) {
+    read (size) {
       t.is(this, stream)
-      t.is(err.message, 'boom')
+      t.is(typeof size, 'number')
+
+      this.push('\xab\xcd', 'ascii')
+      this.push(null)
+    }
+  })
+
+  stream.on('data', (data) => t.alike(data, Buffer.from([0xab, 0xcd])))
+})
+
+test('duplex, write with encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Duplex({
+    write (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from([0xab, 0xcd]))
+      t.is(encoding, 'buffer')
 
       cb(null)
     }
   })
 
-  stream
-    .on('error', (err) => t.is(err.message, 'boom'))
-    .destroy(new Error('boom'))
+  stream.write('\xab\xcd', 'ascii')
 })
 
 test('transform', (t) => {
@@ -256,7 +320,7 @@ test('transform', (t) => {
   stream.write('hello')
 })
 
-test('transform, encoding', (t) => {
+test('transform, set encoding', (t) => {
   t.plan(4)
 
   const stream = new Transform({
@@ -276,4 +340,20 @@ test('transform, encoding', (t) => {
   stream
     .on('data', (data) => t.is(data, 'hello'))
     .write('hello')
+})
+
+test('transform, write with encoding', (t) => {
+  t.plan(3)
+
+  const stream = new Transform({
+    transform (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from([0xab, 0xcd]))
+      t.is(encoding, 'buffer')
+
+      cb(null)
+    }
+  })
+
+  stream.write('\xab\xcd', 'ascii')
 })
