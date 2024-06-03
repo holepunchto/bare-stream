@@ -2,6 +2,8 @@ const stream = require('streamx')
 
 exports.pipeline = stream.pipeline
 
+exports.isStream = stream.isStream
+
 exports.Readable = class Readable extends stream.Readable {
   constructor (opts = {}) {
     super({ ...opts, mapReadable: map })
