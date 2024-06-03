@@ -69,7 +69,7 @@ exports.Writable = class Writable extends stream.Writable {
 
     const result = super.write(chunk)
 
-    if (cb) Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(cb, cb)
 
     return result
   }
@@ -146,7 +146,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     const result = super.write(chunk)
 
-    if (cb) Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(cb, cb)
 
     return result
   }
@@ -209,7 +209,7 @@ exports.Transform = class Transform extends stream.Transform {
 
     const result = super.write(chunk)
 
-    if (cb) Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(cb, cb)
 
     return result
   }
