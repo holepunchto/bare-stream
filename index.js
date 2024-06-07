@@ -89,7 +89,9 @@ exports.Writable = class Writable extends stream.Writable {
       encoding = 'buffer'
     }
 
-    const result = super.end({ chunk, encoding })
+    const result = chunk !== undefined && chunk !== null
+      ? super.end({ chunk, encoding })
+      : super.end()
 
     if (cb) this.once('end', cb)
 
@@ -168,7 +170,9 @@ exports.Duplex = class Duplex extends stream.Duplex {
       encoding = 'buffer'
     }
 
-    const result = super.end({ chunk, encoding })
+    const result = chunk !== undefined && chunk !== null
+      ? super.end({ chunk, encoding })
+      : super.end()
 
     if (cb) this.once('end', cb)
 
@@ -237,7 +241,9 @@ exports.Transform = class Transform extends stream.Transform {
       encoding = 'buffer'
     }
 
-    const result = super.end({ chunk, encoding })
+    const result = chunk !== undefined && chunk !== null
+      ? super.end({ chunk, encoding })
+      : super.end()
 
     if (cb) this.once('end', cb)
 

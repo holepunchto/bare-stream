@@ -197,6 +197,46 @@ test('writable, write with encoding', (t) => {
   stream.write('\xab\xcd', 'ascii')
 })
 
+test('writable, end', (t) => {
+  t.plan(1)
+
+  const stream = new Writable({
+    write (data, encoding, cb) {
+      t.fail()
+    },
+
+    final (cb) {
+      t.pass()
+
+      cb(null)
+    }
+  })
+
+  stream.end()
+})
+
+test('writable, end with data', (t) => {
+  t.plan(4)
+
+  const stream = new Writable({
+    write (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'utf8')
+
+      cb(null)
+    },
+
+    final (cb) {
+      t.pass()
+
+      cb(null)
+    }
+  })
+
+  stream.end('hello')
+})
+
 test('duplex', (t) => {
   t.plan(6)
 
