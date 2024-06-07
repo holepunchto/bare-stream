@@ -40,13 +40,9 @@ exports.Readable = class Readable extends stream.Readable {
 
 exports.Writable = class Writable extends stream.Writable {
   constructor (opts = {}) {
-    super(opts)
+    super({ ...opts, byteLengthWritable })
 
     if (this._construct) this._open = this._construct
-
-    if (this._writev !== stream.Writable.prototype._writev) {
-      this._writev = writev.bind(this, this._writev)
-    }
 
     if (this._write !== stream.Writable.prototype._write) {
       this._write = write.bind(this, this._write)
@@ -64,10 +60,13 @@ exports.Writable = class Writable extends stream.Writable {
     }
 
     if (typeof chunk === 'string') {
-      chunk = Buffer.from(chunk, encoding || defaultEncoding)
+      encoding = encoding || defaultEncoding
+      chunk = Buffer.from(chunk, encoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.write(chunk)
+    const result = super.write({ chunk, encoding })
 
     if (cb) stream.Writable.drained(this).then(cb, cb)
 
@@ -84,10 +83,13 @@ exports.Writable = class Writable extends stream.Writable {
     }
 
     if (typeof chunk === 'string') {
+      encoding = encoding || defaultEncoding
       chunk = Buffer.from(chunk, encoding || defaultEncoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.end(chunk)
+    const result = super.end({ chunk, encoding })
 
     if (cb) this.once('end', cb)
 
@@ -97,16 +99,12 @@ exports.Writable = class Writable extends stream.Writable {
 
 exports.Duplex = class Duplex extends stream.Duplex {
   constructor (opts = {}) {
-    super(opts)
+    super({ ...opts, byteLengthWritable })
 
     if (this._construct) this._open = this._construct
 
     if (this._read !== stream.Readable.prototype._read) {
       this._read = read.bind(this, this._read)
-    }
-
-    if (this._writev !== stream.Duplex.prototype._writev) {
-      this._writev = writev.bind(this, this._writev)
     }
 
     if (this._write !== stream.Duplex.prototype._write) {
@@ -141,10 +139,13 @@ exports.Duplex = class Duplex extends stream.Duplex {
     }
 
     if (typeof chunk === 'string') {
-      chunk = Buffer.from(chunk, encoding || defaultEncoding)
+      encoding = encoding || defaultEncoding
+      chunk = Buffer.from(chunk, encoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.write(chunk)
+    const result = super.write({ chunk, encoding })
 
     if (cb) stream.Writable.drained(this).then(cb, cb)
 
@@ -161,10 +162,13 @@ exports.Duplex = class Duplex extends stream.Duplex {
     }
 
     if (typeof chunk === 'string') {
-      chunk = Buffer.from(chunk, encoding || defaultEncoding)
+      encoding = encoding || defaultEncoding
+      chunk = Buffer.from(chunk, encoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.end(chunk)
+    const result = super.end({ chunk, encoding })
 
     if (cb) this.once('end', cb)
 
@@ -174,7 +178,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
 exports.Transform = class Transform extends stream.Transform {
   constructor (opts = {}) {
-    super(opts)
+    super({ ...opts, byteLengthWritable })
 
     if (this._transform !== stream.Transform.prototype._transform) {
       this._transform = transform.bind(this, this._transform)
@@ -204,10 +208,13 @@ exports.Transform = class Transform extends stream.Transform {
     }
 
     if (typeof chunk === 'string') {
-      chunk = Buffer.from(chunk, encoding || defaultEncoding)
+      encoding = encoding || defaultEncoding
+      chunk = Buffer.from(chunk, encoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.write(chunk)
+    const result = super.write({ chunk, encoding })
 
     if (cb) stream.Writable.drained(this).then(cb, cb)
 
@@ -224,10 +231,13 @@ exports.Transform = class Transform extends stream.Transform {
     }
 
     if (typeof chunk === 'string') {
-      chunk = Buffer.from(chunk, encoding || defaultEncoding)
+      encoding = encoding || defaultEncoding
+      chunk = Buffer.from(chunk, encoding)
+    } else {
+      encoding = 'buffer'
     }
 
-    const result = super.end(chunk)
+    const result = super.end({ chunk, encoding })
 
     if (cb) this.once('end', cb)
 
@@ -243,18 +253,18 @@ function read (read, cb) {
   cb(null)
 }
 
-function writev (writev, batch, cb) {
-  writev.call(this, batch.map(chunk => ({ chunk, encoding: 'buffer' })), cb)
-}
-
 function write (write, data, cb) {
-  write.call(this, data, 'buffer', cb)
+  write.call(this, data.chunk, data.encoding, cb)
 }
 
 function transform (transform, data, cb) {
-  transform.call(this, data, 'buffer', cb)
+  transform.call(this, data.chunk, data.encoding, cb)
 }
 
 function destroy (destroy, cb) {
   destroy.call(this, stream.getStreamError(this), cb)
+}
+
+function byteLengthWritable (data) {
+  return data.chunk.byteLength
 }

@@ -109,7 +109,7 @@ test('writable', (t) => {
     write (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'utf8')
 
       cb(null)
     }
@@ -124,7 +124,7 @@ test('writable, batched', (t) => {
   const stream = new Writable({
     writev (chunks, cb) {
       t.is(this, stream)
-      t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'buffer' }])
+      t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'utf8' }])
 
       cb(null)
     }
@@ -165,6 +165,22 @@ test('writable, destroy with error', (t) => {
     .destroy(new Error('boom'))
 })
 
+test('writable, write buffer', (t) => {
+  t.plan(3)
+
+  const stream = new Writable({
+    write (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'buffer')
+
+      cb(null)
+    }
+  })
+
+  stream.write(Buffer.from('hello'))
+})
+
 test('writable, write with encoding', (t) => {
   t.plan(3)
 
@@ -172,7 +188,7 @@ test('writable, write with encoding', (t) => {
     write (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'ascii')
 
       cb(null)
     }
@@ -196,7 +212,7 @@ test('duplex', (t) => {
     write (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'utf8')
 
       cb(null)
     }
@@ -213,7 +229,7 @@ test('duplex, batched', (t) => {
   const stream = new Duplex({
     writev (chunks, cb) {
       t.is(this, stream)
-      t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'buffer' }])
+      t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'utf8' }])
 
       cb(null)
     }
@@ -288,6 +304,22 @@ test('duplex, push with encoding', (t) => {
   stream.on('data', (data) => t.alike(data, Buffer.from([0xab, 0xcd])))
 })
 
+test('duplex, write buffer', (t) => {
+  t.plan(3)
+
+  const stream = new Duplex({
+    write (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'buffer')
+
+      cb(null)
+    }
+  })
+
+  stream.write(Buffer.from('hello'))
+})
+
 test('duplex, write with encoding', (t) => {
   t.plan(3)
 
@@ -295,7 +327,7 @@ test('duplex, write with encoding', (t) => {
     write (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'ascii')
 
       cb(null)
     }
@@ -311,7 +343,7 @@ test('transform', (t) => {
     transform (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'utf8')
 
       cb(null)
     }
@@ -327,7 +359,7 @@ test('transform, set encoding', (t) => {
     transform (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'utf8')
 
       this.push(data)
 
@@ -342,6 +374,22 @@ test('transform, set encoding', (t) => {
     .write('hello')
 })
 
+test('transform, write buffer', (t) => {
+  t.plan(3)
+
+  const stream = new Transform({
+    transform (data, encoding, cb) {
+      t.is(this, stream)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'buffer')
+
+      cb(null)
+    }
+  })
+
+  stream.write(Buffer.from('hello'))
+})
+
 test('transform, write with encoding', (t) => {
   t.plan(3)
 
@@ -349,7 +397,7 @@ test('transform, write with encoding', (t) => {
     transform (data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
-      t.is(encoding, 'buffer')
+      t.is(encoding, 'ascii')
 
       cb(null)
     }
