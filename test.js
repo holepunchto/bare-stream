@@ -1,5 +1,5 @@
 const test = require('brittle')
-const { Readable, Writable, Duplex, Transform } = require('.')
+const { Readable, Writable, Duplex, Transform, PassThrough } = require('.')
 
 test('readable', (t) => {
   t.plan(3)
@@ -444,4 +444,30 @@ test('transform, write with encoding', (t) => {
   })
 
   stream.write('\xab\xcd', 'ascii')
+})
+
+test('passthrough', (t) => {
+  t.plan(4)
+
+  const writable = new Writable({
+    write (data, encoding, cb) {
+      t.is(this, writable)
+      t.alike(data, Buffer.from('hello'))
+      t.is(encoding, 'buffer')
+    }
+  })
+
+  const readable = new Readable({
+    read (size) {
+      t.is(this, readable)
+
+      this.push('hello')
+      this.push(null)
+    }
+  })
+
+  const passthrough = new PassThrough()
+
+  readable.pipe(passthrough).pipe(writable)
+  readable.read()
 })

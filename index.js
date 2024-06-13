@@ -186,6 +186,8 @@ exports.Transform = class Transform extends stream.Transform {
 
     if (this._transform !== stream.Transform.prototype._transform) {
       this._transform = transform.bind(this, this._transform)
+    } else {
+      this._transform = passthrough
     }
   }
 
@@ -269,6 +271,10 @@ function transform (transform, data, cb) {
 
 function destroy (destroy, cb) {
   destroy.call(this, stream.getStreamError(this), cb)
+}
+
+function passthrough (data, cb) {
+  cb(null, data.chunk)
 }
 
 function byteLengthWritable (data) {
