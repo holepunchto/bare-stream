@@ -28,6 +28,7 @@
     "streamx": "^2.18.0"
   },
   "devDependencies": {
+    "bare-http1": "^3.8.0",
     "brittle": "^3.5.2",
     "standard": "^17.0.0"
   }

@@ -1,5 +1,6 @@
 const test = require('brittle')
-const { Readable, Writable, Duplex, Transform, PassThrough } = require('.')
+const { Readable, Writable, Duplex, Transform, PassThrough, finished } = require('.')
+const http = require('bare-http1')
 
 test('readable', (t) => {
   t.plan(3)
@@ -470,4 +471,162 @@ test('passthrough', (t) => {
 
   readable.pipe(passthrough).pipe(writable)
   readable.read()
+})
+
+test('finished', (t) => {
+  const getReadable = () => new Readable({
+    read (size) {
+      this.push('message')
+    }
+  })
+
+  const getWritable = () => new Writable({
+    write (data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  const getDuplex = () => new Duplex({
+    read (size) {
+      this.push('message')
+    },
+    write (data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  t.test('readable', (t) => {
+    t.plan(1)
+
+    const stream = getReadable()
+
+    finished(stream, (err) => {
+      t.absent(err)
+    })
+
+    stream.on('data', () => stream.push(null))
+  })
+
+  t.test('writable', (t) => {
+    t.plan(1)
+
+    const stream = getWritable()
+
+    finished(stream, (err) => {
+      t.absent(err)
+    })
+
+    stream.end('message')
+  })
+
+  t.test('duplex', (t) => {
+    t.plan(1)
+
+    const stream = getDuplex()
+
+    finished(stream, (err) => {
+      t.absent(err)
+    })
+
+    stream.on('data', () => stream.push(null))
+    stream.end('message')
+  })
+
+  t.test('duplex, readable only', (t) => {
+    t.plan(1)
+
+    const stream = getDuplex()
+
+    finished(stream, { writable: false }, (err) => {
+      t.absent(err)
+    })
+
+    stream.on('data', () => stream.push(null))
+  })
+
+  t.test('duplex, incomplete writing', (t) => {
+    const stream = getDuplex()
+
+    finished(stream, () => {
+      t.fail('not finished writing')
+    })
+
+    stream.on('data', () => stream.push(null))
+  })
+
+  t.test('duplex, writable only', (t) => {
+    t.plan(1)
+
+    const stream = getDuplex()
+
+    finished(stream, { readable: false }, (err) => {
+      t.absent(err)
+    })
+
+    stream.end('message')
+  })
+
+  t.test('duplex, incomplete reading', (t) => {
+    const stream = getDuplex()
+
+    finished(stream, () => {
+      t.fail('not finished reading')
+    })
+
+    stream.end('message')
+  })
+
+  t.test('error handling', (t) => {
+    t.plan(1)
+
+    const stream = getReadable()
+
+    finished(stream, (err) => {
+      t.is(err.message, 'boom')
+    })
+
+    stream.destroy(new Error('boom'))
+  })
+
+  t.test('http request', (t) => {
+    t.plan(1)
+
+    const server = http
+      .createServer()
+      .listen(0)
+      .on('request', (req, res) => res.end())
+
+    server.on('listening', () => {
+      const req = http
+        .request({ port: server.address().port })
+        .end()
+
+      finished(req, (err) => {
+        t.absent(err)
+
+        server.close()
+      })
+    })
+  })
+
+  t.test('http request, error handling', (t) => {
+    t.plan(1)
+
+    const server = http
+      .createServer()
+      .listen(0)
+      .on('connection', (socket) => socket.destroy())
+
+    server.on('listening', () => {
+      const req = http
+        .request({ port: server.address().port })
+        .end()
+
+      finished(req, (err) => {
+        t.ok(err)
+
+        server.close()
+      })
+    })
+  })
 })

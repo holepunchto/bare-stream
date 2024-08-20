@@ -255,6 +255,71 @@ exports.Transform = class Transform extends stream.Transform {
 
 exports.PassThrough = class PassThrough extends exports.Transform {}
 
+exports.finished = function finished (stream, opts, cb) {
+  const defaultOpts = {
+    error: true,
+    readable: true,
+    writable: true,
+    cleanup: false
+  }
+
+  if (typeof opts === 'object' && opts !== null) {
+    opts = { ...defaultOpts, ...opts }
+  }
+
+  if (typeof opts === 'function') {
+    cb = opts
+    opts = defaultOpts
+  }
+
+  // prevent calling cb more than once and perform cleanup
+  cb = (function (fn) {
+    return function () {
+      if (fn) {
+        fn.apply(this, arguments)
+        fn = null
+
+        if (opts.cleanup) cleanup()
+      }
+    }
+  })(cb)
+
+  const readable = opts.readable ?? stream.readable
+  const writable = opts.writable ?? stream.writable
+
+  let readableFinished = false
+  let writableFinished = false
+
+  const onend = () => {
+    readableFinished = true
+    if (!writable || writableFinished) cb()
+  }
+
+  const onfinish = () => {
+    writableFinished = true
+    if (!readable || readableFinished) cb()
+  }
+
+  stream.on('end', onend)
+  stream.on('finish', onfinish)
+  stream.on('close', cb)
+  if (opts.error) stream.on('error', cb)
+
+  const cleanup = () => {
+    stream.off('end', onend)
+    stream.off('finish', onfinish)
+    stream.off('close', cb)
+    stream.off('error', cb)
+
+    const noop = () => {}
+    cb = noop
+  }
+
+  if (!opts.cleanup) {
+    return cleanup
+  }
+}
+
 function read (read, cb) {
   read.call(this, 65536)
 
