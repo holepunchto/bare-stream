@@ -255,69 +255,39 @@ exports.Transform = class Transform extends stream.Transform {
 
 exports.PassThrough = class PassThrough extends exports.Transform {}
 
-exports.finished = function finished (stream, opts, cb) {
-  const defaultOpts = {
-    error: true,
-    readable: true,
-    writable: true,
-    cleanup: false
-  }
-
-  if (typeof opts === 'object' && opts !== null) {
-    opts = { ...defaultOpts, ...opts }
-  }
-
+exports.finished = function finished (_stream, opts, cb) {
   if (typeof opts === 'function') {
     cb = opts
-    opts = defaultOpts
+    opts = {}
   }
 
-  // prevent calling cb more than once and perform cleanup
-  cb = (function (fn) {
-    return function () {
-      if (fn) {
-        fn.apply(this, arguments)
-        fn = null
+  if (!opts) opts = {}
 
-        if (opts.cleanup) cleanup()
-      }
-    }
-  })(cb)
+  const {
+    cleanup = false
+  } = opts
 
-  const readable = opts.readable ?? stream.readable
-  const writable = opts.writable ?? stream.writable
+  const done = () => {
+    cb(stream.getStreamError(_stream, { all: true }))
 
-  let readableFinished = false
-  let writableFinished = false
-
-  const onend = () => {
-    readableFinished = true
-    if (!writable || writableFinished) cb()
+    if (cleanup) detach()
   }
 
-  const onfinish = () => {
-    writableFinished = true
-    if (!readable || readableFinished) cb()
+  const noop = () => {}
+
+  const detach = () => {
+    _stream.off('close', done)
+    _stream.off('error', noop)
   }
 
-  stream.on('end', onend)
-  stream.on('finish', onfinish)
-  stream.on('close', cb)
-  if (opts.error) stream.on('error', cb)
-
-  const cleanup = () => {
-    stream.off('end', onend)
-    stream.off('finish', onfinish)
-    stream.off('close', cb)
-    stream.off('error', cb)
-
-    const noop = () => {}
-    cb = noop
+  if (_stream.destroyed) {
+    done()
+  } else {
+    _stream.on('close', done)
+    _stream.on('error', noop)
   }
 
-  if (!opts.cleanup) {
-    return cleanup
-  }
+  return detach
 }
 
 function read (read, cb) {

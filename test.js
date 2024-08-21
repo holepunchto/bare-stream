@@ -1,6 +1,5 @@
 const test = require('brittle')
 const { Readable, Writable, Duplex, Transform, PassThrough, finished } = require('.')
-const http = require('bare-http1')
 
 test('readable', (t) => {
   t.plan(3)
@@ -473,160 +472,86 @@ test('passthrough', (t) => {
   readable.read()
 })
 
-test('finished', (t) => {
-  const getReadable = () => new Readable({
+test('finished, readable', (t) => {
+  t.plan(1)
+
+  const stream = new Readable({
     read (size) {
-      this.push('message')
+      this.push('hello')
     }
   })
 
-  const getWritable = () => new Writable({
+  finished(stream, (err) => {
+    t.absent(err)
+  })
+
+  stream.on('data', () => stream.push(null))
+})
+
+test('finished, writable', (t) => {
+  t.plan(1)
+
+  const stream = new Writable({
     write (data, encoding, cb) {
       cb(null)
     }
   })
 
-  const getDuplex = () => new Duplex({
+  finished(stream, (err) => {
+    t.absent(err)
+  })
+
+  stream.end('message')
+})
+
+test('finished, duplex', (t) => {
+  t.plan(1)
+
+  const stream = new Duplex({
     read (size) {
-      this.push('message')
+      this.push('hello')
     },
     write (data, encoding, cb) {
       cb(null)
     }
   })
 
-  t.test('readable', (t) => {
-    t.plan(1)
-
-    const stream = getReadable()
-
-    finished(stream, (err) => {
-      t.absent(err)
-    })
-
-    stream.on('data', () => stream.push(null))
+  finished(stream, (err) => {
+    t.absent(err)
   })
 
-  t.test('writable', (t) => {
-    t.plan(1)
+  stream.on('data', () => stream.push(null))
+  stream.end('hello')
+})
 
-    const stream = getWritable()
+test('finished, duplex, incomplete writing', (t) => {
+  const stream = new Duplex()
 
-    finished(stream, (err) => {
-      t.absent(err)
-    })
-
-    stream.end('message')
+  finished(stream, () => {
+    t.fail('not finished writing')
   })
 
-  t.test('duplex', (t) => {
-    t.plan(1)
+  stream.on('data', () => stream.push(null))
+})
 
-    const stream = getDuplex()
+test('finished, duplex, incomplete reading', (t) => {
+  const stream = new Duplex()
 
-    finished(stream, (err) => {
-      t.absent(err)
-    })
-
-    stream.on('data', () => stream.push(null))
-    stream.end('message')
+  finished(stream, () => {
+    t.fail('not finished reading')
   })
 
-  t.test('duplex, readable only', (t) => {
-    t.plan(1)
+  stream.end('hello')
+})
 
-    const stream = getDuplex()
+test('finished, error handling', (t) => {
+  t.plan(1)
 
-    finished(stream, { writable: false }, (err) => {
-      t.absent(err)
-    })
+  const stream = new Readable()
 
-    stream.on('data', () => stream.push(null))
+  finished(stream, (err) => {
+    t.is(err.message, 'boom')
   })
 
-  t.test('duplex, incomplete writing', (t) => {
-    const stream = getDuplex()
-
-    finished(stream, () => {
-      t.fail('not finished writing')
-    })
-
-    stream.on('data', () => stream.push(null))
-  })
-
-  t.test('duplex, writable only', (t) => {
-    t.plan(1)
-
-    const stream = getDuplex()
-
-    finished(stream, { readable: false }, (err) => {
-      t.absent(err)
-    })
-
-    stream.end('message')
-  })
-
-  t.test('duplex, incomplete reading', (t) => {
-    const stream = getDuplex()
-
-    finished(stream, () => {
-      t.fail('not finished reading')
-    })
-
-    stream.end('message')
-  })
-
-  t.test('error handling', (t) => {
-    t.plan(1)
-
-    const stream = getReadable()
-
-    finished(stream, (err) => {
-      t.is(err.message, 'boom')
-    })
-
-    stream.destroy(new Error('boom'))
-  })
-
-  t.test('http request', (t) => {
-    t.plan(1)
-
-    const server = http
-      .createServer()
-      .listen(0)
-      .on('request', (req, res) => res.end())
-
-    server.on('listening', () => {
-      const req = http
-        .request({ port: server.address().port })
-        .end()
-
-      finished(req, (err) => {
-        t.absent(err)
-
-        server.close()
-      })
-    })
-  })
-
-  t.test('http request, error handling', (t) => {
-    t.plan(1)
-
-    const server = http
-      .createServer()
-      .listen(0)
-      .on('connection', (socket) => socket.destroy())
-
-    server.on('listening', () => {
-      const req = http
-        .request({ port: server.address().port })
-        .end()
-
-      finished(req, (err) => {
-        t.ok(err)
-
-        server.close()
-      })
-    })
-  })
+  stream.destroy(new Error('boom'))
 })
