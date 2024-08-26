@@ -1,5 +1,5 @@
 const test = require('brittle')
-const { Readable, Writable, Duplex, Transform, PassThrough } = require('.')
+const { Readable, Writable, Duplex, Transform, PassThrough, finished } = require('.')
 
 test('readable', (t) => {
   t.plan(3)
@@ -470,4 +470,88 @@ test('passthrough', (t) => {
 
   readable.pipe(passthrough).pipe(writable)
   readable.read()
+})
+
+test('finished, readable', (t) => {
+  t.plan(1)
+
+  const stream = new Readable({
+    read (size) {
+      this.push('hello')
+    }
+  })
+
+  finished(stream, (err) => {
+    t.absent(err)
+  })
+
+  stream.on('data', () => stream.push(null))
+})
+
+test('finished, writable', (t) => {
+  t.plan(1)
+
+  const stream = new Writable({
+    write (data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  finished(stream, (err) => {
+    t.absent(err)
+  })
+
+  stream.end('message')
+})
+
+test('finished, duplex', (t) => {
+  t.plan(1)
+
+  const stream = new Duplex({
+    read (size) {
+      this.push('hello')
+    },
+    write (data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  finished(stream, (err) => {
+    t.absent(err)
+  })
+
+  stream.on('data', () => stream.push(null))
+  stream.end('hello')
+})
+
+test('finished, duplex, incomplete writing', (t) => {
+  const stream = new Duplex()
+
+  finished(stream, () => {
+    t.fail('not finished writing')
+  })
+
+  stream.on('data', () => stream.push(null))
+})
+
+test('finished, duplex, incomplete reading', (t) => {
+  const stream = new Duplex()
+
+  finished(stream, () => {
+    t.fail('not finished reading')
+  })
+
+  stream.end('hello')
+})
+
+test('finished, error handling', (t) => {
+  t.plan(1)
+
+  const stream = new Readable()
+
+  finished(stream, (err) => {
+    t.is(err.message, 'boom')
+  })
+
+  stream.destroy(new Error('boom'))
 })
