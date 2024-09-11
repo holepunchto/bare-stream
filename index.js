@@ -1,13 +1,15 @@
 const stream = require('streamx')
 const b4a = require('b4a')
 
-const getStreamError = stream.getStreamError
-
 const defaultEncoding = 'utf8'
 
 exports.pipeline = stream.pipeline
 
 exports.isStream = stream.isStream
+exports.isEnded = stream.isEnded
+exports.isFinished = stream.isFinished
+
+exports.getStreamError = stream.getStreamError
 
 exports.Readable = class Readable extends stream.Readable {
   constructor (opts = {}) {
@@ -271,7 +273,7 @@ exports.finished = function finished (stream, opts, cb) {
   } = opts
 
   const done = () => {
-    cb(getStreamError(stream, { all: true }))
+    cb(exports.getStreamError(stream, { all: true }))
 
     if (cleanup) detach()
   }
@@ -306,7 +308,7 @@ function transform (transform, data, cb) {
 }
 
 function destroy (destroy, cb) {
-  destroy.call(this, stream.getStreamError(this), cb)
+  destroy.call(this, exports.getStreamError(this), cb)
 }
 
 function passthrough (data, cb) {
