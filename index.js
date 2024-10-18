@@ -1,5 +1,4 @@
 const stream = require('streamx')
-const b4a = require('b4a')
 
 const defaultEncoding = 'utf8'
 
@@ -28,7 +27,7 @@ exports.Readable = class Readable extends stream.Readable {
 
   push (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     return super.push(chunk)
@@ -36,7 +35,7 @@ exports.Readable = class Readable extends stream.Readable {
 
   unshift (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     super.unshift(chunk)
@@ -66,7 +65,7 @@ exports.Writable = class Writable extends stream.Writable {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     } else {
       encoding = 'buffer'
     }
@@ -89,7 +88,7 @@ exports.Writable = class Writable extends stream.Writable {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     } else {
       encoding = 'buffer'
     }
@@ -125,7 +124,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
   push (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     return super.push(chunk)
@@ -133,7 +132,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
   unshift (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     super.unshift(chunk)
@@ -147,7 +146,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     } else {
       encoding = 'buffer'
     }
@@ -170,7 +169,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     } else {
       encoding = 'buffer'
     }
@@ -198,7 +197,7 @@ exports.Transform = class Transform extends stream.Transform {
 
   push (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     return super.push(chunk)
@@ -206,7 +205,7 @@ exports.Transform = class Transform extends stream.Transform {
 
   unshift (chunk, encoding) {
     if (typeof chunk === 'string') {
-      chunk = b4a.from(chunk, encoding || defaultEncoding)
+      chunk = Buffer.from(chunk, encoding || defaultEncoding)
     }
 
     super.unshift(chunk)
@@ -220,7 +219,7 @@ exports.Transform = class Transform extends stream.Transform {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     } else {
       encoding = 'buffer'
     }
@@ -243,7 +242,7 @@ exports.Transform = class Transform extends stream.Transform {
 
     if (typeof chunk === 'string') {
       encoding = encoding || defaultEncoding
-      chunk = b4a.from(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     } else {
       encoding = 'buffer'
     }
