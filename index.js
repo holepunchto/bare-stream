@@ -2,6 +2,8 @@ const stream = require('streamx')
 
 const defaultEncoding = 'utf8'
 
+module.exports = exports = stream.Stream
+
 exports.pipeline = stream.pipeline
 
 exports.isStream = stream.isStream
@@ -9,6 +11,8 @@ exports.isEnded = stream.isEnded
 exports.isFinished = stream.isFinished
 
 exports.getStreamError = stream.getStreamError
+
+exports.Stream = exports
 
 exports.Readable = class Readable extends stream.Readable {
   constructor (opts = {}) {
