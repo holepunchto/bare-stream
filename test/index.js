@@ -1,8 +1,8 @@
 const test = require('brittle')
-const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('.')
+const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('..')
 
 test('default export', (t) => {
-  t.is(require('.'), Stream)
+  t.is(require('..'), Stream)
 })
 
 test('readable', (t) => {

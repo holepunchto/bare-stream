@@ -12,7 +12,7 @@
     "promises.js"
   ],
   "scripts": {
-    "test": "standard && bare test.js"
+    "test": "standard && bare test/all.js"
   },
   "repository": {
     "type": "git",
