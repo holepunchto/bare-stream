@@ -10,7 +10,8 @@
   },
   "files": [
     "index.js",
-    "promises.js"
+    "promises.js",
+    "web.js"
   ],
   "scripts": {
     "test": "prettier . --check && bare test/all.js"
