@@ -95,6 +95,10 @@ exports.ReadableStream = class ReadableStream {
     })
   }
 
+  async pipeTo(destination) {
+    return new Promise((resolve) => this._stream.pipe(destination, resolve))
+  }
+
   static from(iterable) {
     return stream.Readable.from(iterable)
   }
