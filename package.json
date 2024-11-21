@@ -5,7 +5,8 @@
   "exports": {
     ".": "./index.js",
     "./package": "./package.json",
-    "./promises": "./promises.js"
+    "./promises": "./promises.js",
+    "./web": "./web.js"
   },
   "files": [
     "index.js",
