@@ -11,13 +11,12 @@ test('basic', async (t) => {
       controller.enqueue(1)
       controller.enqueue(2)
       controller.enqueue(3)
+      controller.close()
     }
   })
 
   for await (const value of stream) {
     read.push(value)
-
-    if (read.length === 3) break
   }
 
   t.alike(read, [1, 2, 3])

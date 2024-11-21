@@ -8,6 +8,10 @@ class ReadableStreamController {
   enqueue(data) {
     this._stream.push(data)
   }
+
+  close() {
+    this._stream.push(null)
+  }
 }
 
 exports.ReadableStream = class ReadableStream {
