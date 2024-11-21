@@ -1,2 +1,2 @@
-require('.')
+require('./basic')
 require('./web')
