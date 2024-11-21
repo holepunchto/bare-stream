@@ -7,10 +7,10 @@ const {
   Transform,
   PassThrough,
   finished
-} = require('.')
+} = require('..')
 
 test('default export', (t) => {
-  t.is(require('.'), Stream)
+  t.is(require('..'), Stream)
 })
 
 test('readable', (t) => {

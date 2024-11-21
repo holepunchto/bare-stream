@@ -5,14 +5,15 @@
   "exports": {
     ".": "./index.js",
     "./package": "./package.json",
-    "./promises": "./promises.js"
+    "./promises": "./promises.js",
+    "./web": "./web.js"
   },
   "files": [
     "index.js",
     "promises.js"
   ],
   "scripts": {
-    "test": "prettier . --check && bare test.js"
+    "test": "prettier . --check && bare test/all.js"
   },
   "repository": {
     "type": "git",
