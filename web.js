@@ -1,6 +1,6 @@
 const stream = require('streamx')
 
-const ReadableStreamController = class ReadableStreamController {
+class ReadableStreamController {
   constructor(stream) {
     this._stream = stream
   }
@@ -10,14 +10,21 @@ const ReadableStreamController = class ReadableStreamController {
   }
 }
 
-exports.ReadableStream = class ReadableStream extends stream.Readable {
-  constructor(underlyingSource = {}) {
-    super()
+exports.ReadableStream = class ReadableStream {
+  constructor(opts = {}) {
+    const { start } = opts
 
-    const { start = noop } = underlyingSource
+    this._stream = new stream.Readable()
+    this._controller = new ReadableStreamController(this._stream)
 
-    start(new ReadableStreamController(this))
+    if (start) this._start = start.bind(this)
+
+    this._start(this._controller)
+  }
+
+  _start(controller) {}
+
+  [Symbol.asyncIterator]() {
+    return this._stream[Symbol.asyncIterator]()
   }
 }
-
-function noop() {}
