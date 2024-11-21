@@ -48,13 +48,13 @@ test('cancel', async (t) => {
 })
 
 test('from', async (t) => {
-  const asyncIterator = (async function* () {
+  async function* asyncIterator() {
     yield 1
     yield 2
     yield 3
-  })()
+  }
 
-  const stream = ReadableStream.from(asyncIterator)
+  const stream = ReadableStream.from(asyncIterator())
 
   t.ok(stream instanceof ReadableStream)
 
