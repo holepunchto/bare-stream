@@ -32,6 +32,13 @@ exports.ReadableStream = class ReadableStream {
 
   _start(controller) {}
 
+  async cancel(reason) {
+    return new Promise((resolve) => {
+      this._stream.once('close', resolve)
+      this._stream.destroy(reason)
+    })
+  }
+
   [Symbol.asyncIterator]() {
     return this._stream[Symbol.asyncIterator]()
   }

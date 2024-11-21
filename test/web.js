@@ -36,3 +36,13 @@ test('error', async (t) => {
     }
   }, 'boom!')
 })
+
+test('cancel', async (t) => {
+  t.plan(1)
+
+  const stream = new ReadableStream()
+
+  await stream.cancel()
+
+  t.pass()
+})
