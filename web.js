@@ -1,17 +1,17 @@
 const stream = require('streamx')
 
 const ReadableStreamController = class ReadableStreamController {
-  constructor (stream) {
+  constructor(stream) {
     this._stream = stream
   }
 
-  enqueue (data) {
+  enqueue(data) {
     this._stream.push(data)
   }
 }
 
 exports.ReadableStream = class ReadableStream extends stream.Readable {
-  constructor (underlyingSource = {}) {
+  constructor(underlyingSource = {}) {
     super()
 
     const { start = noop } = underlyingSource
@@ -20,4 +20,4 @@ exports.ReadableStream = class ReadableStream extends stream.Readable {
   }
 }
 
-function noop () {}
+function noop() {}

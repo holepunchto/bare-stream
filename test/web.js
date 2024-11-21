@@ -7,7 +7,7 @@ test('basic', async (t) => {
   const read = []
 
   const stream = new ReadableStream({
-    start (controller) {
+    start(controller) {
       controller.enqueue(1)
       controller.enqueue(2)
       controller.enqueue(3)
