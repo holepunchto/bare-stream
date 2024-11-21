@@ -65,3 +65,21 @@ test('from', async (t) => {
 
   t.alike(read, [1, 2, 3])
 })
+
+test('reader', async (t) => {
+  t.plan(3)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(1)
+      controller.enqueue(2)
+      controller.close()
+    }
+  })
+
+  const reader = stream.getReader()
+
+  t.alike(await reader.read(), { value: 1, done: false })
+  t.alike(await reader.read(), { value: 2, done: false })
+  t.alike(await reader.read(), { value: undefined, done: true })
+})
