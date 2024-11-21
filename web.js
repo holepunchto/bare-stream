@@ -58,6 +58,14 @@ class ReadableStreamReader {
       }
     })
   }
+
+  cancel(reason) {
+    if (this._stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) =>
+      this._stream.once('close', resolve).destroy(reason)
+    )
+  }
 }
 
 class ReadableStreamController {
