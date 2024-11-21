@@ -12,6 +12,10 @@ class ReadableStreamController {
   close() {
     this._stream.push(null)
   }
+
+  error(err) {
+    this._stream.destroy(err)
+  }
 }
 
 exports.ReadableStream = class ReadableStream {
