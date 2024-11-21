@@ -46,3 +46,22 @@ test('cancel', async (t) => {
 
   t.pass()
 })
+
+test('from', async (t) => {
+  t.plan(1)
+
+  const asyncIterator = (async function* () {
+    yield 1
+    yield 2
+    yield 3
+  })()
+
+  const stream = ReadableStream.from(asyncIterator)
+
+  const read = []
+  for await (const value of stream) {
+    read.push(value)
+  }
+
+  t.alike(read, [1, 2, 3])
+})

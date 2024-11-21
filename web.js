@@ -39,6 +39,10 @@ exports.ReadableStream = class ReadableStream {
     })
   }
 
+  static from(iterable) {
+    return stream.Readable.from(iterable)
+  }
+
   [Symbol.asyncIterator]() {
     return this._stream[Symbol.asyncIterator]()
   }
