@@ -1,5 +1,13 @@
 const test = require('brittle')
-const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('.')
+const {
+  Stream,
+  Readable,
+  Writable,
+  Duplex,
+  Transform,
+  PassThrough,
+  finished
+} = require('.')
 
 test('default export', (t) => {
   t.is(require('.'), Stream)
@@ -9,7 +17,7 @@ test('readable', (t) => {
   t.plan(3)
 
   const stream = new Readable({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -27,7 +35,7 @@ test('readable, async', (t) => {
   let i = 0
 
   const stream = new Readable({
-    read () {
+    read() {
       if (i++ === 3) this.push(null)
       else setTimeout(() => this.push(i.toString()), 10)
     }
@@ -44,7 +52,7 @@ test('readable, destroy', (t) => {
   t.plan(2)
 
   const stream = new Readable({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err, null)
 
@@ -59,7 +67,7 @@ test('readable, destroy with error', (t) => {
   t.plan(3)
 
   const stream = new Readable({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err.message, 'boom')
 
@@ -76,7 +84,7 @@ test('readable, set encoding', (t) => {
   t.plan(3)
 
   const stream = new Readable({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -94,7 +102,7 @@ test('readable, push with encoding', (t) => {
   t.plan(3)
 
   const stream = new Readable({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -110,7 +118,7 @@ test('writable', (t) => {
   t.plan(3)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'utf8')
@@ -126,7 +134,7 @@ test('writable, batched', (t) => {
   t.plan(2)
 
   const stream = new Writable({
-    writev (chunks, cb) {
+    writev(chunks, cb) {
       t.is(this, stream)
       t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'utf8' }])
 
@@ -141,7 +149,7 @@ test('writable, destroy', (t) => {
   t.plan(2)
 
   const stream = new Writable({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err, null)
 
@@ -156,7 +164,7 @@ test('writable, destroy with error', (t) => {
   t.plan(3)
 
   const stream = new Writable({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err.message, 'boom')
 
@@ -173,7 +181,7 @@ test('writable, write buffer', (t) => {
   t.plan(3)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'buffer')
@@ -189,7 +197,7 @@ test('writable, write with encoding', (t) => {
   t.plan(3)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
       t.is(encoding, 'ascii')
@@ -205,11 +213,11 @@ test('writable, end', (t) => {
   t.plan(1)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.fail()
     },
 
-    final (cb) {
+    final(cb) {
       t.pass()
 
       cb(null)
@@ -223,7 +231,7 @@ test('writable, end with data', (t) => {
   t.plan(4)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'utf8')
@@ -231,7 +239,7 @@ test('writable, end with data', (t) => {
       cb(null)
     },
 
-    final (cb) {
+    final(cb) {
       t.pass()
 
       cb(null)
@@ -245,7 +253,7 @@ test('duplex', (t) => {
   t.plan(6)
 
   const stream = new Duplex({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -253,7 +261,7 @@ test('duplex', (t) => {
       this.push(null)
     },
 
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'utf8')
@@ -271,7 +279,7 @@ test('duplex, batched', (t) => {
   t.plan(2)
 
   const stream = new Duplex({
-    writev (chunks, cb) {
+    writev(chunks, cb) {
       t.is(this, stream)
       t.alike(chunks, [{ chunk: Buffer.from('hello'), encoding: 'utf8' }])
 
@@ -286,7 +294,7 @@ test('duplex, destroy', (t) => {
   t.plan(2)
 
   const stream = new Duplex({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err, null)
 
@@ -301,7 +309,7 @@ test('duplex, destroy with error', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    destroy (err, cb) {
+    destroy(err, cb) {
       t.is(this, stream)
       t.is(err.message, 'boom')
 
@@ -318,7 +326,7 @@ test('duplex, set encoding', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -336,7 +344,7 @@ test('duplex, push with encoding', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    read (size) {
+    read(size) {
       t.is(this, stream)
       t.is(typeof size, 'number')
 
@@ -352,7 +360,7 @@ test('duplex, write buffer', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'buffer')
@@ -368,7 +376,7 @@ test('duplex, write with encoding', (t) => {
   t.plan(3)
 
   const stream = new Duplex({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
       t.is(encoding, 'ascii')
@@ -384,7 +392,7 @@ test('transform', (t) => {
   t.plan(3)
 
   const stream = new Transform({
-    transform (data, encoding, cb) {
+    transform(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'utf8')
@@ -400,7 +408,7 @@ test('transform, set encoding', (t) => {
   t.plan(4)
 
   const stream = new Transform({
-    transform (data, encoding, cb) {
+    transform(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'utf8')
@@ -413,16 +421,14 @@ test('transform, set encoding', (t) => {
 
   stream.setEncoding('utf8')
 
-  stream
-    .on('data', (data) => t.is(data, 'hello'))
-    .write('hello')
+  stream.on('data', (data) => t.is(data, 'hello')).write('hello')
 })
 
 test('transform, write buffer', (t) => {
   t.plan(3)
 
   const stream = new Transform({
-    transform (data, encoding, cb) {
+    transform(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'buffer')
@@ -438,7 +444,7 @@ test('transform, write with encoding', (t) => {
   t.plan(3)
 
   const stream = new Transform({
-    transform (data, encoding, cb) {
+    transform(data, encoding, cb) {
       t.is(this, stream)
       t.alike(data, Buffer.from([0xab, 0xcd]))
       t.is(encoding, 'ascii')
@@ -454,7 +460,7 @@ test('passthrough', (t) => {
   t.plan(4)
 
   const writable = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       t.is(this, writable)
       t.alike(data, Buffer.from('hello'))
       t.is(encoding, 'buffer')
@@ -462,7 +468,7 @@ test('passthrough', (t) => {
   })
 
   const readable = new Readable({
-    read (size) {
+    read(size) {
       t.is(this, readable)
 
       this.push('hello')
@@ -480,7 +486,7 @@ test('finished, readable', (t) => {
   t.plan(1)
 
   const stream = new Readable({
-    read (size) {
+    read(size) {
       this.push('hello')
     }
   })
@@ -496,7 +502,7 @@ test('finished, writable', (t) => {
   t.plan(1)
 
   const stream = new Writable({
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       cb(null)
     }
   })
@@ -512,10 +518,10 @@ test('finished, duplex', (t) => {
   t.plan(1)
 
   const stream = new Duplex({
-    read (size) {
+    read(size) {
       this.push('hello')
     },
-    write (data, encoding, cb) {
+    write(data, encoding, cb) {
       cb(null)
     }
   })
