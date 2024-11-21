@@ -1,4 +1,4 @@
-const stream = require('streamx')
+const { Readable, getStreamError } = require('streamx')
 
 class ReadableStreamReader {
   constructor(stream) {
@@ -6,48 +6,56 @@ class ReadableStreamReader {
   }
 
   read() {
+    const stream = this._stream
+
     return new Promise((resolve, reject) => {
-      // sync
-      const err = stream.getStreamError(this._stream)
+      const err = getStreamError(stream)
+
       if (err) return reject(err)
 
-      if (this._stream.destroyed)
+      if (stream.destroyed) {
         return resolve({ value: undefined, done: true })
-
-      const value = this._stream.read()
-      if (value !== null) return resolve({ value, done: false })
-
-      // async
-      const onreadable = () => {
-        detach()
-
-        const value = this._stream.read()
-        value === null
-          ? resolve({ value: undefined, done: true })
-          : resolve({ value, done: false })
       }
 
-      const onclose = () => {
-        detach()
+      const value = stream.read()
 
-        resolve({ value: undefined, done: true })
+      if (value !== null) {
+        return resolve({ value, done: false })
       }
 
-      const onerror = (err) => {
-        detach()
+      stream
+        .once('readable', onreadable)
+        .once('close', onclose)
+        .once('error', onerror)
 
-        reject(err)
+      function onreadable() {
+        const value = stream.read()
+
+        ondone(
+          null,
+          value === null
+            ? { value: undefined, done: true }
+            : { value, done: false }
+        )
       }
 
-      const detach = () => {
-        this._stream.off('readable', onreadable)
-        this._stream.off('close', onclose)
-        this._stream.off('error', onerror)
+      function onclose() {
+        ondone(null, { value: undefined, done: true })
       }
 
-      this._stream.once('readable', onreadable)
-      this._stream.once('close', onclose)
-      this._stream.once('error', onerror)
+      function onerror(err) {
+        ondone(err, null)
+      }
+
+      function ondone(err, value) {
+        stream
+          .off('readable', onreadable)
+          .off('close', onclose)
+          .off('error', onerror)
+
+        if (err) reject(err)
+        else resolve(value)
+      }
     })
   }
 }
@@ -71,10 +79,14 @@ class ReadableStreamController {
 }
 
 exports.ReadableStream = class ReadableStream {
-  constructor(opts = {}) {
-    const { start } = opts
+  constructor(
+    underlyingSource = {},
+    queuingStrategy = {},
+    stream = new Readable()
+  ) {
+    const { start } = underlyingSource
 
-    this._stream = new stream.Readable()
+    this._stream = stream
     this._controller = new ReadableStreamController(this._stream)
 
     if (start) this._start = start.bind(this)
@@ -88,22 +100,27 @@ exports.ReadableStream = class ReadableStream {
     return new ReadableStreamReader(this._stream)
   }
 
-  async cancel(reason) {
-    return new Promise((resolve) => {
-      this._stream.once('close', resolve)
-      this._stream.destroy(reason)
-    })
+  cancel(reason) {
+    if (this._stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) =>
+      this._stream.once('close', resolve).destroy(reason)
+    )
   }
 
-  async pipeTo(destination) {
-    return new Promise((resolve) => this._stream.pipe(destination, resolve))
-  }
-
-  static from(iterable) {
-    return stream.Readable.from(iterable)
+  pipeTo(destination) {
+    return new Promise((resolve, reject) =>
+      this._stream.pipe(destination, (err) => {
+        err ? reject(err) : resolve()
+      })
+    )
   }
 
   [Symbol.asyncIterator]() {
     return this._stream[Symbol.asyncIterator]()
+  }
+
+  static from(iterable) {
+    return new ReadableStream(undefined, undefined, Readable.from(iterable))
   }
 }

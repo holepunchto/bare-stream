@@ -48,8 +48,6 @@ test('cancel', async (t) => {
 })
 
 test('from', async (t) => {
-  t.plan(1)
-
   const asyncIterator = (async function* () {
     yield 1
     yield 2
@@ -58,7 +56,10 @@ test('from', async (t) => {
 
   const stream = ReadableStream.from(asyncIterator)
 
+  t.ok(stream instanceof ReadableStream)
+
   const read = []
+
   for await (const value of stream) {
     read.push(value)
   }
