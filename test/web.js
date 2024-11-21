@@ -21,3 +21,18 @@ test('basic', async (t) => {
 
   t.alike(read, [1, 2, 3])
 })
+
+test('error', async (t) => {
+  t.plan(1)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.error('boom!')
+    }
+  })
+
+  t.exception(async () => {
+    for await (const value of stream) {
+    }
+  }, 'boom!')
+})
