@@ -73,6 +73,13 @@ class ReadableStreamController {
     this._stream = stream
   }
 
+  get desiredSize() {
+    return (
+      this._stream._readableState.highWaterMark -
+      this._stream._readableState.buffered
+    )
+  }
+
   enqueue(data) {
     this._stream.push(data)
   }
@@ -89,20 +96,27 @@ class ReadableStreamController {
 exports.ReadableStream = class ReadableStream {
   constructor(
     underlyingSource = {},
-    queuingStrategy = {},
-    stream = new Readable()
+    queuingStrategy = new exports.CountQueuingStrategy(),
+    stream
   ) {
-    const { start } = underlyingSource
+    const { start, pull } = underlyingSource
+    const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-    this._stream = stream
+    this._stream =
+      stream ||
+      new Readable({ eagerOpen: true, highWaterMark, byteLength: size })
+
     this._controller = new ReadableStreamController(this._stream)
+    this._start = start
 
-    if (start) this._start = start.bind(this)
+    if (start) {
+      this._stream._open = open.bind(this, start.call(this, this._controller))
+    }
 
-    this._start(this._controller)
+    if (pull) {
+      this._stream._read = read.bind(this, pull)
+    }
   }
-
-  _start(controller) {}
 
   getReader() {
     return new ReadableStreamReader(this._stream)
@@ -130,5 +144,53 @@ exports.ReadableStream = class ReadableStream {
 
   static from(iterable) {
     return new ReadableStream(undefined, undefined, Readable.from(iterable))
+  }
+}
+
+async function open(starting, cb) {
+  try {
+    await starting
+
+    cb(null)
+  } catch (err) {
+    cb(err)
+  }
+}
+
+async function read(pull, cb) {
+  try {
+    await pull(this._controller)
+
+    cb(null)
+  } catch (err) {
+    cb(err)
+  }
+}
+
+function defaultSize() {
+  return 1
+}
+
+exports.CountQueuingStrategy = class CountQueuingStrategy {
+  constructor(opts = {}) {
+    const { highWaterMark = 1 } = opts
+
+    this.highWaterMark = highWaterMark
+  }
+
+  size(chunk) {
+    return 1
+  }
+}
+
+exports.ByteLengthQueuingStrategy = class ByteLengthQueuingStrategy {
+  constructor(opts = {}) {
+    const { highWaterMark = 16384 } = opts
+
+    this.highWaterMark = highWaterMark
+  }
+
+  size(chunk) {
+    return chunk.byteLength
   }
 }
