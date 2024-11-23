@@ -1,5 +1,9 @@
 const test = require('brittle')
-const { ReadableStream } = require('../web')
+const {
+  ReadableStream,
+  CountQueuingStrategy,
+  ByteLengthQueuingStrategy
+} = require('../web')
 
 test('basic', async (t) => {
   t.plan(2)
@@ -123,7 +127,7 @@ test('only trigger pull after start is finished', async (t) => {
   })
 })
 
-test('CountQueuingStrategy', async (t) => {
+test('count queuing strategy', async (t) => {
   t.plan(7)
 
   let loop = 0
@@ -185,7 +189,7 @@ test('custom high water mark', async (t) => {
   )
 })
 
-test('ByteLengthQueuingStrategy', async (t) => {
+test('byte length queuing strategy', async (t) => {
   t.plan(7)
 
   let loop = 0
