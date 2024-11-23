@@ -6,12 +6,14 @@
     ".": "./index.js",
     "./package": "./package.json",
     "./promises": "./promises.js",
-    "./web": "./web.js"
+    "./web": "./web.js",
+    "./global": "./global.js"
   },
   "files": [
     "index.js",
     "promises.js",
-    "web.js"
+    "web.js",
+    "global.js"
   ],
   "scripts": {
     "test": "prettier . --check && bare test/all.js"

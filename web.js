@@ -1,8 +1,8 @@
 const { Readable, getStreamError } = require('streamx')
 
-class ReadableStreamReader {
+exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
-    this._stream = stream
+    this._stream = stream._stream
   }
 
   read() {
@@ -68,9 +68,9 @@ class ReadableStreamReader {
   }
 }
 
-class ReadableStreamController {
+exports.ReadableStreamDefaultController = class ReadableStreamDefaultController {
   constructor(stream) {
-    this._stream = stream
+    this._stream = stream._stream
   }
 
   get desiredSize() {
@@ -106,8 +106,7 @@ exports.ReadableStream = class ReadableStream {
       stream ||
       new Readable({ eagerOpen: true, highWaterMark, byteLength: size })
 
-    this._controller = new ReadableStreamController(this._stream)
-    this._start = start
+    this._controller = new exports.ReadableStreamDefaultController(this)
 
     if (start) {
       this._stream._open = open.bind(this, start.call(this, this._controller))
@@ -119,7 +118,7 @@ exports.ReadableStream = class ReadableStream {
   }
 
   getReader() {
-    return new ReadableStreamReader(this._stream)
+    return new exports.ReadableStreamDefaultReader(this)
   }
 
   cancel(reason) {
