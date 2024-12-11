@@ -115,7 +115,7 @@ test('only trigger pull after start is finished', async (t) => {
 
   let foo
 
-  new ReadableStream({
+  const stream = new ReadableStream({
     async start(controller) {
       await new Promise((resolve) => setTimeout(resolve, 200))
       foo = 42
@@ -125,12 +125,15 @@ test('only trigger pull after start is finished', async (t) => {
       controller.close()
     }
   })
+
+  await stream.getReader().read()
 })
 
 test('count queuing strategy', async (t) => {
-  t.plan(7)
+  t.plan(8)
 
   let loop = 0
+  let reader
 
   const stream = new ReadableStream(
     {
@@ -139,29 +142,34 @@ test('count queuing strategy', async (t) => {
       },
       async pull(controller) {
         if (loop === 0) t.is(controller.desiredSize, 4)
-        if (loop === 1) t.is(controller.desiredSize, 3)
+        if (loop === 1) t.is(controller.desiredSize, 4)
 
         if (loop === 2) {
-          t.is(controller.desiredSize, 2)
-          await stream.getReader().read()
           t.is(controller.desiredSize, 3)
+          await reader.read()
+          t.is(controller.desiredSize, 4)
         }
 
-        if (loop === 3) t.is(controller.desiredSize, 2)
-        if (loop === 4) t.is(controller.desiredSize, 1)
-        if (loop === 5) t.fail()
+        if (loop === 3) t.is(controller.desiredSize, 3)
+        if (loop === 4) t.is(controller.desiredSize, 2)
+        if (loop === 5) t.is(controller.desiredSize, 1)
+        if (loop === 6) t.fail()
 
         controller.enqueue(loop++)
       }
     },
     new CountQueuingStrategy({ highWaterMark: 4 })
   )
+
+  reader = stream.getReader()
+  reader.read()
 })
 
 test('custom high water mark', async (t) => {
-  t.plan(7)
+  t.plan(8)
 
   let loop = 0
+  let reader
 
   const stream = new ReadableStream(
     {
@@ -170,29 +178,34 @@ test('custom high water mark', async (t) => {
       },
       async pull(controller) {
         if (loop === 0) t.is(controller.desiredSize, 4)
-        if (loop === 1) t.is(controller.desiredSize, 3)
+        if (loop === 1) t.is(controller.desiredSize, 4)
 
         if (loop === 2) {
-          t.is(controller.desiredSize, 2)
-          await stream.getReader().read()
           t.is(controller.desiredSize, 3)
+          await reader.read()
+          t.is(controller.desiredSize, 4)
         }
 
-        if (loop === 3) t.is(controller.desiredSize, 2)
-        if (loop === 4) t.is(controller.desiredSize, 1)
-        if (loop === 5) t.fail()
+        if (loop === 3) t.is(controller.desiredSize, 3)
+        if (loop === 4) t.is(controller.desiredSize, 2)
+        if (loop === 5) t.is(controller.desiredSize, 1)
+        if (loop === 6) t.fail()
 
         controller.enqueue(loop++)
       }
     },
     { highWaterMark: 4 }
   )
+
+  reader = stream.getReader()
+  reader.read()
 })
 
 test('byte length queuing strategy', async (t) => {
-  t.plan(7)
+  t.plan(8)
 
   let loop = 0
+  let reader
 
   const stream = new ReadableStream(
     {
@@ -201,30 +214,36 @@ test('byte length queuing strategy', async (t) => {
       },
       async pull(controller) {
         if (loop === 0) t.is(controller.desiredSize, 20)
-        if (loop === 1) t.is(controller.desiredSize, 15)
+        if (loop === 1) t.is(controller.desiredSize, 20)
 
         if (loop === 2) {
-          t.is(controller.desiredSize, 10)
-          await stream.getReader().read()
           t.is(controller.desiredSize, 15)
+          await reader.read()
+          t.is(controller.desiredSize, 20)
         }
 
-        if (loop === 3) t.is(controller.desiredSize, 10)
-        if (loop === 4) t.is(controller.desiredSize, 5)
-        if (loop === 5) t.fail()
+        if (loop === 3) t.is(controller.desiredSize, 15)
+        if (loop === 4) t.is(controller.desiredSize, 10)
+        if (loop === 5) t.is(controller.desiredSize, 5)
+        if (loop === 6) t.fail()
 
         loop++
+
         controller.enqueue(Buffer.from('hello'))
       }
     },
     new ByteLengthQueuingStrategy({ highWaterMark: 20 })
   )
+
+  reader = stream.getReader()
+  reader.read()
 })
 
 test('custom size function', async (t) => {
-  t.plan(7)
+  t.plan(8)
 
   let loop = 0
+  let reader
 
   const stream = new ReadableStream(
     {
@@ -233,22 +252,27 @@ test('custom size function', async (t) => {
       },
       async pull(controller) {
         if (loop === 0) t.is(controller.desiredSize, 20)
-        if (loop === 1) t.is(controller.desiredSize, 15)
+        if (loop === 1) t.is(controller.desiredSize, 20)
 
         if (loop === 2) {
-          t.is(controller.desiredSize, 10)
-          await stream.getReader().read()
           t.is(controller.desiredSize, 15)
+          await reader.read()
+          t.is(controller.desiredSize, 20)
         }
 
-        if (loop === 3) t.is(controller.desiredSize, 10)
-        if (loop === 4) t.is(controller.desiredSize, 5)
-        if (loop === 5) t.fail()
+        if (loop === 3) t.is(controller.desiredSize, 15)
+        if (loop === 4) t.is(controller.desiredSize, 10)
+        if (loop === 5) t.is(controller.desiredSize, 5)
+        if (loop === 6) t.fail()
 
         loop++
-        controller.enqueue('hello')
+
+        controller.enqueue(Buffer.from('hello'))
       }
     },
-    { highWaterMark: 20, size: (elem) => Buffer.from(elem).byteLength }
+    { highWaterMark: 20, size: (e) => Buffer.from(e).byteLength }
   )
+
+  reader = stream.getReader()
+  reader.read()
 })

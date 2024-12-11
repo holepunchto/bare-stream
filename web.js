@@ -105,9 +105,7 @@ exports.ReadableStream = class ReadableStream {
     const { start, pull } = underlyingSource
     const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-    this._stream =
-      stream ||
-      new Readable({ eagerOpen: true, highWaterMark, byteLength: size })
+    this._stream = stream || new Readable({ highWaterMark, byteLength: size })
 
     this._controller = new exports.ReadableStreamDefaultController(this)
 
