@@ -1,5 +1,6 @@
-const { Readable, getStreamError } = require('streamx')
+const { Readable, getStreamError, isDisturbed } = require('streamx')
 
+// https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
     this._stream = stream._stream
@@ -68,6 +69,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 }
 
+// https://streams.spec.whatwg.org/#readablestreamdefaultcontroller
 exports.ReadableStreamDefaultController = class ReadableStreamDefaultController {
   constructor(stream) {
     this._stream = stream._stream
@@ -93,6 +95,7 @@ exports.ReadableStreamDefaultController = class ReadableStreamDefaultController 
   }
 }
 
+// https://streams.spec.whatwg.org/#readablestream
 exports.ReadableStream = class ReadableStream {
   constructor(
     underlyingSource = {},
@@ -170,6 +173,7 @@ function defaultSize() {
   return 1
 }
 
+// https://streams.spec.whatwg.org/#countqueuingstrategy
 exports.CountQueuingStrategy = class CountQueuingStrategy {
   constructor(opts = {}) {
     const { highWaterMark = 1 } = opts
@@ -182,6 +186,7 @@ exports.CountQueuingStrategy = class CountQueuingStrategy {
   }
 }
 
+// https://streams.spec.whatwg.org/#bytelengthqueuingstrategy
 exports.ByteLengthQueuingStrategy = class ByteLengthQueuingStrategy {
   constructor(opts = {}) {
     const { highWaterMark = 16384 } = opts
@@ -192,4 +197,9 @@ exports.ByteLengthQueuingStrategy = class ByteLengthQueuingStrategy {
   size(chunk) {
     return chunk.byteLength
   }
+}
+
+// https://streams.spec.whatwg.org/#is-readable-stream-disturbed
+exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
+  return isDisturbed(stream._stream)
 }
