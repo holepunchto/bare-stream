@@ -1,4 +1,4 @@
-const { Readable, getStreamError, isDisturbed } = require('streamx')
+const { Readable, getStreamError, isStream, isDisturbed } = require('streamx')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -97,24 +97,28 @@ exports.ReadableStreamDefaultController = class ReadableStreamDefaultController 
 
 // https://streams.spec.whatwg.org/#readablestream
 exports.ReadableStream = class ReadableStream {
-  constructor(
-    underlyingSource = {},
-    queuingStrategy = new exports.CountQueuingStrategy(),
-    stream
-  ) {
-    const { start, pull } = underlyingSource
-    const { highWaterMark = 1, size = defaultSize } = queuingStrategy
+  constructor(underlyingSource = {}, queuingStrategy) {
+    if (isStream(underlyingSource)) {
+      this._stream = underlyingSource
+    } else {
+      if (queuingStrategy === undefined) {
+        queuingStrategy = new exports.CountQueuingStrategy()
+      }
 
-    this._stream = stream || new Readable({ highWaterMark, byteLength: size })
+      const { start, pull } = underlyingSource
+      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-    this._controller = new exports.ReadableStreamDefaultController(this)
+      this._stream = new Readable({ highWaterMark, byteLength: size })
 
-    if (start) {
-      this._stream._open = open.bind(this, start.call(this, this._controller))
-    }
+      const controller = new exports.ReadableStreamDefaultController(this)
 
-    if (pull) {
-      this._stream._read = read.bind(this, pull)
+      if (start) {
+        this._stream._open = open.bind(this, start.call(this, controller))
+      }
+
+      if (pull) {
+        this._stream._read = read.bind(this, pull.bind(this, controller))
+      }
     }
   }
 
@@ -143,7 +147,7 @@ exports.ReadableStream = class ReadableStream {
   }
 
   static from(iterable) {
-    return new ReadableStream(undefined, undefined, Readable.from(iterable))
+    return new ReadableStream(Readable.from(iterable))
   }
 }
 
@@ -159,7 +163,7 @@ async function open(starting, cb) {
 
 async function read(pull, cb) {
   try {
-    await pull(this._controller)
+    await pull()
 
     cb(null)
   } catch (err) {
