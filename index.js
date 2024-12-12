@@ -9,7 +9,6 @@ exports.pipeline = stream.pipeline
 exports.isStream = stream.isStream
 exports.isEnded = stream.isEnded
 exports.isFinished = stream.isFinished
-exports.isDisturbed = stream.isDisturbed
 
 exports.getStreamError = stream.getStreamError
 

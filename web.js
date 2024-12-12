@@ -1,4 +1,4 @@
-const { Readable, getStreamError, isDisturbed } = require('streamx')
+const { Readable, getStreamError } = require('streamx')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -199,5 +199,5 @@ exports.ByteLengthQueuingStrategy = class ByteLengthQueuingStrategy {
 
 // https://streams.spec.whatwg.org/#is-readable-stream-disturbed
 exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
-  return isDisturbed(stream._stream)
+  return Readable.isDisturbed(stream._stream)
 }
