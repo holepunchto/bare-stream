@@ -1,6 +1,6 @@
 {
   "name": "bare-stream",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "Streaming data for JavaScript",
   "exports": {
     ".": "./index.js",
