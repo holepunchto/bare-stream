@@ -1,4 +1,4 @@
-const { Readable, getStreamError, isStream, isDisturbed } = require('streamx')
+const { Readable, getStreamError, isStreamx, isDisturbed } = require('streamx')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -98,7 +98,7 @@ exports.ReadableStreamDefaultController = class ReadableStreamDefaultController 
 // https://streams.spec.whatwg.org/#readablestream
 exports.ReadableStream = class ReadableStream {
   constructor(underlyingSource = {}, queuingStrategy) {
-    if (isStream(underlyingSource)) {
+    if (isStreamx(underlyingSource)) {
       this._stream = underlyingSource
     } else {
       if (queuingStrategy === undefined) {
