@@ -3,7 +3,10 @@
   "version": "2.6.1",
   "description": "Streaming data for JavaScript",
   "exports": {
-    ".": "./index.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
     "./package": "./package.json",
     "./promises": "./promises.js",
     "./web": "./web.js",
@@ -11,6 +14,7 @@
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "promises.js",
     "web.js",
     "global.js"
@@ -32,8 +36,14 @@
     "streamx": "^2.21.0"
   },
   "devDependencies": {
+    "bare-buffer": "^2.7.1",
+    "bare-events": "^2.5.3",
     "brittle": "^3.5.2",
     "prettier": "^3.3.3",
     "prettier-config-standard": "^7.0.0"
+  },
+  "peerDependencies": {
+    "bare-buffer": "*",
+    "bare-events": "*"
   }
 }
