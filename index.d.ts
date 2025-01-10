@@ -182,6 +182,12 @@ declare class Transform<
   constructor(opts?: TransformOptions)
 }
 
+type Pipeline<S extends Writable> = [
+  src: Readable,
+  ...transforms: Duplex[],
+  dest: S
+]
+
 declare namespace Stream {
   export {
     Stream,
@@ -192,13 +198,16 @@ declare namespace Stream {
     Transform as PassThrough
   }
 
-  export function pipeline(streams: Stream[], done?: StreamCallback): Stream
+  export function pipeline<S extends Writable>(
+    streams: Pipeline<S>,
+    cb?: StreamCallback
+  ): S
 
-  export function pipeline(
-    ...args: [stream: Stream, ...streams: Stream[], done: StreamCallback]
-  ): Stream
+  export function pipeline<S extends Writable>(...args: [...Pipeline<S>]): S
 
-  export function pipeline(stream: Stream, ...streams: Stream[]): Stream
+  export function pipeline<S extends Writable>(
+    ...args: [...Pipeline<S>, cb: StreamCallback]
+  ): S
 
   export function finished(
     stream: Stream,
