@@ -189,6 +189,14 @@ declare namespace Stream {
     Transform as PassThrough
   }
 
+  export function pipeline(streams: Stream[], done?: StreamCallback): Stream
+
+  export function pipeline(
+    ...args: [stream: Stream, ...streams: Stream[], done: StreamCallback]
+  ): Stream
+
+  export function pipeline(stream: Stream, ...streams: Stream[]): Stream
+
   export function finished(
     stream: Stream,
     opts: { cleanup?: boolean },
