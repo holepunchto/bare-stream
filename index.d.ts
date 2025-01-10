@@ -74,7 +74,7 @@ declare class Readable {
 
   static from(
     data: (Buffer | string)[] | AsyncIterable<Buffer | string>,
-    opts?: ReadableOptions<Readable>
+    opts?: ReadableOptions
   ): Readable
 
   static isBackpressured(rs: Readable): boolean
