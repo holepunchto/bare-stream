@@ -34,6 +34,8 @@ interface Stream<M extends StreamEvents = StreamEvents>
   destroy(err?: Error | null): void
 }
 
+declare class Stream {}
+
 interface ReadableEvents extends StreamEvents {
   data: [data: Buffer | string]
   end: []
