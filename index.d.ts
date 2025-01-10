@@ -77,7 +77,10 @@ declare class Readable<
   constructor(opts?: ReadableOptions)
 
   static from(
-    data: (Buffer | string)[] | AsyncIterable<Buffer | string>,
+    data:
+      | (Buffer | string)
+      | (Buffer | string)[]
+      | AsyncIterable<Buffer | string>,
     opts?: ReadableOptions
   ): Readable
 
@@ -203,7 +206,7 @@ declare namespace Stream {
     cb: StreamCallback
   ): () => void
 
-  export function finished(stream: Stream, cb: Stream): () => void
+  export function finished(stream: Stream, cb: StreamCallback): () => void
 
   export function isStream(stream: unknown): stream is Stream
 
