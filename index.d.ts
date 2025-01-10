@@ -71,7 +71,9 @@ interface Readable<M extends ReadableEvents = ReadableEvents>
   setEncoding(encoding: BufferEncoding): void
 }
 
-declare class Readable {
+declare class Readable<
+  M extends ReadableEvents = ReadableEvents
+> extends Stream<M> {
   constructor(opts?: ReadableOptions)
 
   static from(
@@ -128,7 +130,9 @@ interface Writable<M extends WritableEvents = WritableEvents>
   uncork(): void
 }
 
-declare class Writable {
+declare class Writable<
+  M extends WritableEvents = WritableEvents
+> extends Stream<M> {
   constructor(opts?: WritableOptions)
 
   static isBackpressured(ws: Writable): boolean
@@ -145,6 +149,8 @@ interface DuplexOptions<S extends Duplex = Duplex>
 interface Duplex<M extends DuplexEvents = DuplexEvents>
   extends Readable<M>,
     Writable<M> {}
+
+declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {}
 
 interface TransformEvents extends DuplexEvents {}
 
@@ -165,7 +171,9 @@ interface Transform<M extends TransformEvents = TransformEvents>
   _flush(cb: StreamCallback): void
 }
 
-declare class Transform {
+declare class Transform<
+  M extends TransformEvents = TransformEvents
+> extends Duplex<M> {
   constructor(opts?: TransformOptions)
 }
 
