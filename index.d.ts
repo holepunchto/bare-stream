@@ -203,7 +203,7 @@ declare namespace Stream {
     cb?: StreamCallback
   ): S
 
-  export function pipeline<S extends Writable>(...args: [...Pipeline<S>]): S
+  export function pipeline<S extends Writable>(...args: Pipeline<S>): S
 
   export function pipeline<S extends Writable>(
     ...args: [...Pipeline<S>, cb: StreamCallback]
