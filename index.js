@@ -17,7 +17,13 @@ exports.Stream = exports
 
 exports.Readable = class Readable extends stream.Readable {
   constructor(opts = {}) {
-    super(opts)
+    super({
+      ...opts,
+      byteLength: null,
+      byteLengthReadable: null,
+      map: null,
+      mapReadable: null
+    })
 
     if (this._construct) this._open = this._construct
 
@@ -49,7 +55,13 @@ exports.Readable = class Readable extends stream.Readable {
 
 exports.Writable = class Writable extends stream.Writable {
   constructor(opts = {}) {
-    super({ ...opts, byteLengthWritable })
+    super({
+      ...opts,
+      byteLength: null,
+      byteLengthWritable,
+      map: null,
+      mapWritable: null
+    })
 
     if (this._construct) this._open = this._construct
 
@@ -77,7 +89,7 @@ exports.Writable = class Writable extends stream.Writable {
 
     const result = super.write({ chunk, encoding })
 
-    if (cb) stream.Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(() => cb(null), cb)
 
     return result
   }
@@ -103,7 +115,7 @@ exports.Writable = class Writable extends stream.Writable {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', cb)
+    if (cb) this.once('end', () => cb(null))
 
     return result
   }
@@ -111,7 +123,15 @@ exports.Writable = class Writable extends stream.Writable {
 
 exports.Duplex = class Duplex extends stream.Duplex {
   constructor(opts = {}) {
-    super({ ...opts, byteLengthWritable })
+    super({
+      ...opts,
+      byteLength: null,
+      byteLengthReadable: null,
+      byteLengthWritable,
+      map: null,
+      mapReadable: null,
+      mapWritable: null
+    })
 
     if (this._construct) this._open = this._construct
 
@@ -159,7 +179,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     const result = super.write({ chunk, encoding })
 
-    if (cb) stream.Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(() => cb(null), cb)
 
     return result
   }
@@ -185,7 +205,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', cb)
+    if (cb) this.once('end', () => cb(null))
 
     return result
   }
@@ -193,7 +213,15 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
 exports.Transform = class Transform extends stream.Transform {
   constructor(opts = {}) {
-    super({ ...opts, byteLengthWritable })
+    super({
+      ...opts,
+      byteLength: null,
+      byteLengthReadable: null,
+      byteLengthWritable,
+      map: null,
+      mapReadable: null,
+      mapWritable: null
+    })
 
     if (this._transform !== stream.Transform.prototype._transform) {
       this._transform = transform.bind(this, this._transform)
@@ -233,7 +261,7 @@ exports.Transform = class Transform extends stream.Transform {
 
     const result = super.write({ chunk, encoding })
 
-    if (cb) stream.Writable.drained(this).then(cb, cb)
+    if (cb) stream.Writable.drained(this).then(() => cb(null), cb)
 
     return result
   }
@@ -259,7 +287,7 @@ exports.Transform = class Transform extends stream.Transform {
         ? super.end({ chunk, encoding })
         : super.end()
 
-    if (cb) this.once('end', cb)
+    if (cb) this.once('end', () => cb(null))
 
     return result
   }

@@ -1,209 +1,174 @@
-import EventEmitter from 'bare-events'
+import EventEmitter, { EventMap } from 'bare-events'
 import Buffer, { BufferEncoding } from 'bare-buffer'
 
-// duplicated from 'bare-events'
-declare interface EventMap {
-  [event: string | symbol]: unknown[]
+type StreamEncoding = BufferEncoding | 'buffer'
+
+interface StreamCallback {
+  (err: Error | null): void
 }
 
-type StreamOptions = {
-  destroy?: Stream['_destroy']
+interface StreamEvents extends EventMap {
+  close: []
+  error: [err: Error]
+}
+
+interface StreamOptions<S extends Stream> {
   eagerOpen?: boolean
-  open?: Stream['_open']
-  predestroy?: Stream['_predestroy']
   signal?: AbortSignal
+  open?(this: S, cb: StreamCallback): void
+  predestroy?(this: S): void
+  destroy?(this: S, err: Error | null, cb: StreamCallback): void
 }
 
-declare interface Stream<M extends EventMap = EventMap>
+interface Stream<M extends StreamEvents = StreamEvents>
   extends EventEmitter<M> {
-  _open(cb: (err?: Error | null) => void): void
-  _destroy: (
-    this: this,
-    err: Error | null,
-    cb: (err?: Error | null) => void
-  ) => void
+  _open(cb: StreamCallback): void
   _predestroy(): void
+  _destroy(err: Error | null, cb: StreamCallback): void
 
-  get readable(): boolean
-  get writable(): boolean
-  get destroyed(): boolean
-  get destroying(): boolean
+  readonly readable: boolean
+  readonly writable: boolean
+  readonly destroyed: boolean
+  readonly destroying: boolean
 
   destroy(err?: Error | null): void
 }
 
-declare class Stream {
-  constructor(opts?: StreamOptions)
+interface ReadableEvents extends StreamEvents {
+  data: [data: Buffer | string]
+  end: []
+  readable: []
+  piping: [dest: Writable]
 }
 
-type ReadableOptions = {
-  byteLength?: (data: unknown) => number
-  byteLengthReadable?: (data: unknown) => number
+interface ReadableOptions<S extends Readable = Readable>
+  extends StreamOptions<S> {
   encoding?: BufferEncoding
   highWaterMark?: number
-  map?: (data: unknown) => unknown
-  mapReadable?: (data: unknown) => unknown
-  read?: Readable['_read']
-} & StreamOptions
+  read?(this: S, size: number): void
+}
 
-declare interface Readable<T = Buffer | string>
-  extends Stream<{
-    data: [data: T | null]
-    close: []
-    end: []
-    error: [err: Error]
-    readable: []
-    piping: [dest: unknown]
-  }> {
-  _read(this: this, size: number): void
+interface Readable<M extends ReadableEvents = ReadableEvents>
+  extends Stream<M>,
+    AsyncIterable<Buffer> {
+  _read(size: number): void
 
-  push(chunk: T | null, encoding?: BufferEncoding): boolean
+  push(data: string, encoding?: BufferEncoding): boolean
+  push(data: Buffer | null): boolean
 
-  unshift(chunk: T | null, encoding?: BufferEncoding): boolean
+  unshift(data: string, encoding?: BufferEncoding): boolean
+  unshift(data: Buffer | null): boolean
 
-  read(): T | null
+  read(): Buffer | string | null
 
   resume(): this
   pause(): this
 
-  pipe<A extends Writable | Duplex>(dest: A, cb?: (err: Error) => void): A
+  pipe<S extends Writable>(dest: S, cb?: StreamCallback): S
 
   setEncoding(encoding: BufferEncoding): void
-
-  [Symbol.asyncIterator](): AsyncIterator<T>
 }
 
 declare class Readable {
-  static from(data: unknown | unknown[], opts?: ReadableOptions): Readable
+  constructor(opts?: ReadableOptions)
+
+  static from(
+    data: (Buffer | string)[] | AsyncIterable<Buffer | string>,
+    opts?: ReadableOptions<Readable>
+  ): Readable
 
   static isBackpressured(rs: Readable): boolean
-  static isPaused(rs: Readable): boolean
 
-  constructor(opts?: ReadableOptions)
+  static isPaused(rs: Readable): boolean
 }
 
-type WritableOptions = {
-  final?: Writable['_final']
-  mapWritable?: (data: unknown) => unknown
-  write?: Writable['_write']
-  writev?: Writable['_writev']
-} & StreamOptions
+interface WritableEvents extends StreamEvents {
+  drain: []
+  finish: []
+  pipe: [src: Readable]
+}
 
-declare interface Writable<T = Buffer | string>
-  extends Stream<{
-    drain: []
-    finish: []
-    close: []
-    error: [err: Error]
-    pipe: [src: Readable]
-  }> {
+interface WritableOptions<S extends Writable = Writable>
+  extends StreamOptions<S> {
+  write?(
+    this: S,
+    data: Buffer,
+    encoding: StreamEncoding,
+    cb: StreamCallback
+  ): void
+  writev?(
+    this: S,
+    batch: { chunk: Buffer; encoding: StreamEncoding }[],
+    cb: StreamCallback
+  ): void
+  final?(this: S, cb: StreamCallback): void
+}
+
+interface Writable<M extends WritableEvents = WritableEvents>
+  extends Stream<M> {
+  _write(data: Buffer, encoding: StreamEncoding, cb: StreamCallback): void
+  _writev(
+    batch: { chunk: Buffer; encoding: StreamEncoding }[],
+    cb: StreamCallback
+  ): void
+  _final(cb: StreamCallback): void
+
   readonly destroyed: boolean
 
-  _writev(this: this, batch: T[], cb: (err?: Error | null) => void): void
-  _write(
-    this: this,
-    data: T,
-    encoding: BufferEncoding,
-    cb: (err?: Error | null) => void
-  ): void
-  _final(this: this, cb: (err?: Error | null) => void): void
+  write(data: string, encoding?: BufferEncoding, cb?: StreamCallback): boolean
+  write(data: Buffer, cb?: StreamCallback): boolean
 
-  write(chunk: T, encoding?: BufferEncoding, cb?: () => void): boolean
-  write(chunk: T, cb?: () => void): boolean
-
-  end(chunk: T, encoding?: BufferEncoding, cb?: () => void): this
-  end(chunk: T, cb?: () => void): this
-  end(cb?: () => void): this
+  end(cb?: StreamCallback): this
+  end(data: string, encoding?: BufferEncoding, cb?: StreamCallback): this
+  end(data: Buffer, cb?: StreamCallback): this
 
   cork(): void
   uncork(): void
 }
 
 declare class Writable {
-  static isBackpressured(ws: Writable): Promise<boolean>
-  static drained(ws: Writable): Promise<boolean>
-
   constructor(opts?: WritableOptions)
+
+  static isBackpressured(ws: Writable): boolean
+
+  static drained(ws: Writable): Promise<boolean>
 }
 
-type DuplexOptions = ReadableOptions & WritableOptions
+interface DuplexEvents extends ReadableEvents, WritableEvents {}
 
-declare interface Duplex<T = Buffer | string>
-  extends Stream<{
-    close: []
-    data: [data: T | null]
-    drain: []
-    end: []
-    error: [err: Error]
-    finish: []
-    pipe: [src: Readable]
-    piping: [dest: unknown]
-    readable: []
-  }> {
-  _read(this: this, size: number): void
-  _writev(this: this, batch: T[], cb: (err?: Error | null) => void): void
-  _write(this: this, data: T, cb: (err?: Error | null) => void): void
-  _final(this: this, cb: (err?: Error | null) => void): void
+interface DuplexOptions<S extends Duplex = Duplex>
+  extends ReadableOptions<S>,
+    WritableOptions<S> {}
 
-  write(chunk: T, encoding?: BufferEncoding, cb?: () => void): boolean
-  write(chunk: T, cb?: () => void): boolean
+interface Duplex<M extends DuplexEvents = DuplexEvents>
+  extends Readable<M>,
+    Writable<M> {}
 
-  end(chunk: T, encoding?: BufferEncoding, cb?: () => void): this
-  end(chunk: T, cb?: () => void): this
-  end(cb?: () => void): this
+interface TransformEvents extends DuplexEvents {}
 
-  push(chunk: T | null, encoding?: BufferEncoding): boolean
-  unshift(chunk: T | null, encoding?: BufferEncoding): boolean
-
-  read(): T | null
-
-  resume(): this
-  pause(): this
-
-  pipe<A extends Stream>(dest: A, cb?: (err: Error) => void): A
-
-  setEncoding(encoding: BufferEncoding): void
-
-  cork(): void
-  uncork(): void
-
-  [Symbol.asyncIterator](): AsyncIterator<T>
-}
-
-declare class Duplex {
-  constructor(opts?: DuplexOptions)
-}
-
-type TransformOptions = {
-  flush?: Transform['_flush']
-  transform?: Transform['_transform']
-} & DuplexOptions
-
-declare interface Transform<T = Buffer | string> extends Duplex {
-  _transform(
-    this: this,
-    data: T,
-    encoding: BufferEncoding,
-    cb: (err?: Error | null) => void
+interface TransformOptions<S extends Transform = Transform>
+  extends DuplexOptions<S> {
+  transform?(
+    this: S,
+    data: Buffer,
+    encoding: StreamEncoding,
+    cb: StreamCallback
   ): void
-  _flush(cb: (this: this, err: Error | null) => void): void
+  flush?(this: S, cb: StreamCallback): void
+}
+
+interface Transform<M extends TransformEvents = TransformEvents>
+  extends Duplex<M> {
+  _transform(data: Buffer, encoding: StreamEncoding, cb: StreamCallback): void
+  _flush(cb: StreamCallback): void
 }
 
 declare class Transform {
   constructor(opts?: TransformOptions)
 }
 
-declare class Pipeline {
-  constructor(src: Stream, dst: Stream, cb: (err?: Error | null) => void)
-
-  finished(): void
-
-  done(stream: Stream, err: Error): void
-}
-
 declare namespace Stream {
   export {
-    Pipeline,
     Stream,
     Readable,
     Writable,
@@ -215,13 +180,10 @@ declare namespace Stream {
   export function finished(
     stream: Stream,
     opts: { cleanup?: boolean },
-    cb: (err?: Error | null) => void
+    cb: StreamCallback
   ): () => void
 
-  export function finished(
-    stream: Stream,
-    cb: (err?: Error | null) => void
-  ): () => void
+  export function finished(stream: Stream, cb: Stream): () => void
 
   export function isStream(stream: unknown): stream is Stream
 

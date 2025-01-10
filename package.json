@@ -20,7 +20,7 @@
     "global.js"
   ],
   "scripts": {
-    "test": "prettier . --check && bare test/all.js"
+    "test": "prettier . --check && bare test.js"
   },
   "repository": {
     "type": "git",
@@ -36,8 +36,8 @@
     "streamx": "^2.21.0"
   },
   "devDependencies": {
-    "bare-buffer": "^2.7.1",
-    "bare-events": "^2.5.3",
+    "bare-buffer": "^3.0.0",
+    "bare-events": "^2.5.4",
     "brittle": "^3.5.2",
     "prettier": "^3.3.3",
     "prettier-config-standard": "^7.0.0"
