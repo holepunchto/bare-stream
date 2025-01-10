@@ -150,7 +150,9 @@ interface Duplex<M extends DuplexEvents = DuplexEvents>
   extends Readable<M>,
     Writable<M> {}
 
-declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {}
+declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {
+  constructor(opts?: DuplexOptions)
+}
 
 interface TransformEvents extends DuplexEvents {}
 
