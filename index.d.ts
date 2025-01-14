@@ -12,7 +12,7 @@ interface StreamEvents extends EventMap {
   error: [err: Error]
 }
 
-interface StreamOptions<S extends Stream> {
+interface StreamOptions<S extends Stream = Stream> {
   eagerOpen?: boolean
   signal?: AbortSignal
   open?(this: S, cb: StreamCallback): void
@@ -191,10 +191,20 @@ type Pipeline<S extends Writable> = [
 declare namespace Stream {
   export {
     Stream,
+    StreamEvents,
+    StreamOptions,
     Readable,
+    ReadableEvents,
+    ReadableOptions,
     Writable,
+    WritableEvents,
+    WritableOptions,
     Duplex,
+    DuplexEvents,
+    DuplexOptions,
     Transform,
+    TransformEvents,
+    TransformOptions,
     Transform as PassThrough
   }
 
