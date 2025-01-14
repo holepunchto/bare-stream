@@ -45,5 +45,13 @@
   "peerDependencies": {
     "bare-buffer": "*",
     "bare-events": "*"
+  },
+  "peerDependenciesMeta": {
+    "bare-buffer": {
+      "optional": true
+    },
+    "bare-events": {
+      "optional": true
+    }
   }
 }
