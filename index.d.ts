@@ -37,7 +37,7 @@ interface Stream<M extends StreamEvents = StreamEvents>
 declare class Stream {}
 
 interface ReadableEvents extends StreamEvents {
-  data: [data: Buffer | string]
+  data: [data: unknown]
   end: []
   readable: []
   piping: [dest: Writable]
@@ -52,16 +52,12 @@ interface ReadableOptions<S extends Readable = Readable>
 
 interface Readable<M extends ReadableEvents = ReadableEvents>
   extends Stream<M>,
-    AsyncIterable<Buffer> {
+    AsyncIterable<unknown> {
   _read(size: number): void
 
-  push(data: string, encoding?: BufferEncoding): boolean
-  push(data: Buffer | null): boolean
-
-  unshift(data: string, encoding?: BufferEncoding): boolean
-  unshift(data: Buffer | null): boolean
-
-  read(): Buffer | string | null
+  push(data: unknown | null, encoding?: BufferEncoding): boolean
+  unshift(data: unknown | null, encoding?: BufferEncoding): boolean
+  read(): unknown | null
 
   resume(): this
   pause(): this
@@ -77,10 +73,7 @@ declare class Readable<
   constructor(opts?: ReadableOptions)
 
   static from(
-    data:
-      | (Buffer | string)
-      | (Buffer | string)[]
-      | AsyncIterable<Buffer | string>,
+    data: unknown | unknown[] | AsyncIterable<unknown>,
     opts?: ReadableOptions
   ): Readable
 
@@ -99,13 +92,13 @@ interface WritableOptions<S extends Writable = Writable>
   extends StreamOptions<S> {
   write?(
     this: S,
-    data: Buffer,
+    data: unknown,
     encoding: StreamEncoding,
     cb: StreamCallback
   ): void
   writev?(
     this: S,
-    batch: { chunk: Buffer; encoding: StreamEncoding }[],
+    batch: { chunk: unknown; encoding: StreamEncoding }[],
     cb: StreamCallback
   ): void
   final?(this: S, cb: StreamCallback): void
@@ -113,21 +106,21 @@ interface WritableOptions<S extends Writable = Writable>
 
 interface Writable<M extends WritableEvents = WritableEvents>
   extends Stream<M> {
-  _write(data: Buffer, encoding: StreamEncoding, cb: StreamCallback): void
+  _write(data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   _writev(
-    batch: { chunk: Buffer; encoding: StreamEncoding }[],
+    batch: { chunk: unknown; encoding: StreamEncoding }[],
     cb: StreamCallback
   ): void
   _final(cb: StreamCallback): void
 
   readonly destroyed: boolean
 
-  write(data: string, encoding?: BufferEncoding, cb?: StreamCallback): boolean
-  write(data: Buffer, cb?: StreamCallback): boolean
+  write(data: unknown, encoding?: BufferEncoding, cb?: StreamCallback): boolean
+  write(data: unknown, cb?: StreamCallback): boolean
 
   end(cb?: StreamCallback): this
-  end(data: string, encoding?: BufferEncoding, cb?: StreamCallback): this
-  end(data: Buffer, cb?: StreamCallback): this
+  end(data: unknown, encoding?: BufferEncoding, cb?: StreamCallback): this
+  end(data: unknown, cb?: StreamCallback): this
 
   cork(): void
   uncork(): void
@@ -163,7 +156,7 @@ interface TransformOptions<S extends Transform = Transform>
   extends DuplexOptions<S> {
   transform?(
     this: S,
-    data: Buffer,
+    data: unknown,
     encoding: StreamEncoding,
     cb: StreamCallback
   ): void
@@ -172,7 +165,7 @@ interface TransformOptions<S extends Transform = Transform>
 
 interface Transform<M extends TransformEvents = TransformEvents>
   extends Duplex<M> {
-  _transform(data: Buffer, encoding: StreamEncoding, cb: StreamCallback): void
+  _transform(data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   _flush(cb: StreamCallback): void
 }
 
