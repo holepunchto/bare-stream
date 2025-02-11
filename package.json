@@ -9,7 +9,10 @@
     },
     "./package": "./package.json",
     "./promises": "./promises.js",
-    "./web": "./web.js",
+    "./web": {
+      "types": "./web.d.ts",
+      "default": "./web.js"
+    },
     "./global": "./global.js"
   },
   "files": [
@@ -17,6 +20,7 @@
     "index.d.ts",
     "promises.js",
     "web.js",
+    "web.d.ts",
     "global.js"
   ],
   "scripts": {
