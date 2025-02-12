@@ -1,8 +1,8 @@
 import { Writable } from '.'
 
 export interface ReadableStreamDefaultReader {
-  read(): Promise<unknown>
-  cancel(reason?: Error | string | null): Promise<void>
+  read(): Promise<{ value: unknown; done: boolean }>
+  cancel(reason?: unknown): Promise<void>
 }
 
 export class ReadableStreamDefaultReader {
@@ -14,7 +14,7 @@ export interface ReadableStreamDefaultController {
 
   enqueue(data: unknown): void
   close(): void
-  error(error?: Error | null): void
+  error(error?: unknown): void
 }
 
 export class ReadableStreamDefaultController {
@@ -26,21 +26,21 @@ export interface UnderlyingSource<S extends ReadableStream = ReadableStream> {
   pull?(this: S, controller: ReadableStreamDefaultController): void
 }
 
-export interface QueuingStrategy {
+export interface CustomQueuingStrategy {
   highWaterMark?: number
   size?: (chunk: unknown) => number
 }
 
 export interface ReadableStream extends AsyncIterable<unknown> {
   getReader(): ReadableStreamDefaultReader
-  cancel(reason?: Error | string | null): Promise<void>
+  cancel(reason?: unknown): Promise<void>
   pipeTo(destination: Writable): Promise<void>
 }
 
 export class ReadableStream {
   constructor(
     underlyingSource?: UnderlyingSource,
-    queuingStrategy?: QueuingStrategy
+    queuingStrategy?: CustomQueuingStrategy
   )
 
   static from(
@@ -48,22 +48,24 @@ export class ReadableStream {
   ): ReadableStream
 }
 
-export interface WebStreamStrategyOptions {
+export interface QueuingStrategyOptions {
   highWaterMark?: number
 }
 
-declare interface WebStreamStrategy {
+interface QueuingStrategy {
   readonly highWaterMark: number
 
   size(chunk: unknown): number
 }
 
-declare class WebStreamStrategy {
-  constructor(opts?: WebStreamStrategyOptions)
+declare class QueuingStrategy {
+  constructor(opts?: QueuingStrategyOptions)
 }
 
-export class CountQueuingStrategy extends WebStreamStrategy {}
+export { type QueuingStrategy }
 
-export class ByteLengthQueuingStrategy extends WebStreamStrategy {}
+export class CountQueuingStrategy extends QueuingStrategy {}
+
+export class ByteLengthQueuingStrategy extends QueuingStrategy {}
 
 export function isReadableStreamDisturbed(stream: ReadableStream): boolean
