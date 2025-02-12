@@ -33,7 +33,7 @@ test('error', async (t) => {
 
   const stream = new ReadableStream({
     start(controller) {
-      controller.error(new Error('boom!'))
+      controller.error('boom!')
     }
   })
 
