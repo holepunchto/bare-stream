@@ -327,9 +327,13 @@ exports.finished = function finished(stream, opts, cb) {
 }
 
 function read(read, cb) {
-  read.call(this, 65536)
+  if (read.length === 2) {
+    read.call(this, 65536, cb)
+  } else {
+    read.call(this, 65536)
 
-  cb(null)
+    cb(null)
+  }
 }
 
 function write(write, data, cb) {

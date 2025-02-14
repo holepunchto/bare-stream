@@ -48,6 +48,24 @@ test('readable, async', (t) => {
     .on('end', () => t.alike(read, ['1', '2', '3']))
 })
 
+test('readable, callback', (t) => {
+  t.plan(4)
+
+  const stream = new Readable({
+    read(size, cb) {
+      t.is(this, stream)
+      t.is(typeof size, 'number')
+      t.is(typeof cb, 'function')
+
+      this.push('hello')
+      this.push(null)
+      cb(null)
+    }
+  })
+
+  stream.on('data', (data) => t.alike(data, Buffer.from('hello')))
+})
+
 test('readable, destroy', (t) => {
   t.plan(2)
 
