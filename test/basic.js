@@ -210,7 +210,7 @@ test('writable, write with encoding', (t) => {
 })
 
 test('writable, end', (t) => {
-  t.plan(1)
+  t.plan(2)
 
   const stream = new Writable({
     write(data, encoding, cb) {
@@ -224,7 +224,7 @@ test('writable, end', (t) => {
     }
   })
 
-  stream.end()
+  stream.end(() => t.pass())
 })
 
 test('writable, end with data', (t) => {
@@ -388,6 +388,24 @@ test('duplex, write with encoding', (t) => {
   stream.write('\xab\xcd', 'ascii')
 })
 
+test('duplex, end', (t) => {
+  t.plan(2)
+
+  const stream = new Duplex({
+    write(data, encoding, cb) {
+      cb(null)
+    },
+
+    final(cb) {
+      t.pass()
+
+      cb(null)
+    }
+  })
+
+  stream.end(() => t.pass())
+})
+
 test('transform', (t) => {
   t.plan(3)
 
@@ -454,6 +472,24 @@ test('transform, write with encoding', (t) => {
   })
 
   stream.write('\xab\xcd', 'ascii')
+})
+
+test('transform, end', (t) => {
+  t.plan(2)
+
+  const stream = new Transform({
+    write(data, encoding, cb) {
+      t.fail()
+    },
+
+    final(cb) {
+      t.pass()
+
+      cb(null)
+    }
+  })
+
+  stream.end(() => t.pass())
 })
 
 test('passthrough', (t) => {
