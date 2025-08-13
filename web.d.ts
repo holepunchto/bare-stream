@@ -68,4 +68,6 @@ export class CountQueuingStrategy extends QueuingStrategy {}
 
 export class ByteLengthQueuingStrategy extends QueuingStrategy {}
 
+export function isReadableStream(value: unknown): value is ReadableStream
+
 export function isReadableStreamDisturbed(stream: ReadableStream): boolean
