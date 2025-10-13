@@ -1,9 +1,5 @@
 const test = require('brittle')
-const {
-  ReadableStream,
-  CountQueuingStrategy,
-  ByteLengthQueuingStrategy
-} = require('../web')
+const { ReadableStream, CountQueuingStrategy, ByteLengthQueuingStrategy } = require('../web')
 
 test('basic', async (t) => {
   t.plan(2)

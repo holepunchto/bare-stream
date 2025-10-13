@@ -1,13 +1,5 @@
 const test = require('brittle')
-const {
-  Stream,
-  Readable,
-  Writable,
-  Duplex,
-  Transform,
-  PassThrough,
-  finished
-} = require('..')
+const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('..')
 
 test('default export', (t) => {
   t.is(require('..'), Stream)
@@ -75,9 +67,7 @@ test('readable, destroy with error', (t) => {
     }
   })
 
-  stream
-    .on('error', (err) => t.is(err.message, 'boom'))
-    .destroy(new Error('boom'))
+  stream.on('error', (err) => t.is(err.message, 'boom')).destroy(new Error('boom'))
 })
 
 test('readable, set encoding', (t) => {
@@ -172,9 +162,7 @@ test('writable, destroy with error', (t) => {
     }
   })
 
-  stream
-    .on('error', (err) => t.is(err.message, 'boom'))
-    .destroy(new Error('boom'))
+  stream.on('error', (err) => t.is(err.message, 'boom')).destroy(new Error('boom'))
 })
 
 test('writable, write buffer', (t) => {
@@ -270,9 +258,7 @@ test('duplex', (t) => {
     }
   })
 
-  stream
-    .on('data', (data) => t.alike(data, Buffer.from('hello')))
-    .write('hello')
+  stream.on('data', (data) => t.alike(data, Buffer.from('hello'))).write('hello')
 })
 
 test('duplex, batched', (t) => {
@@ -317,9 +303,7 @@ test('duplex, destroy with error', (t) => {
     }
   })
 
-  stream
-    .on('error', (err) => t.is(err.message, 'boom'))
-    .destroy(new Error('boom'))
+  stream.on('error', (err) => t.is(err.message, 'boom')).destroy(new Error('boom'))
 })
 
 test('duplex, set encoding', (t) => {

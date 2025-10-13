@@ -111,9 +111,7 @@ exports.Writable = class Writable extends stream.Writable {
     }
 
     const result =
-      chunk !== undefined && chunk !== null
-        ? super.end({ chunk, encoding })
-        : super.end()
+      chunk !== undefined && chunk !== null ? super.end({ chunk, encoding }) : super.end()
 
     if (cb) this.once('finish', () => cb(null))
 
@@ -201,9 +199,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
     }
 
     const result =
-      chunk !== undefined && chunk !== null
-        ? super.end({ chunk, encoding })
-        : super.end()
+      chunk !== undefined && chunk !== null ? super.end({ chunk, encoding }) : super.end()
 
     if (cb) this.once('finish', () => cb(null))
 
@@ -283,9 +279,7 @@ exports.Transform = class Transform extends stream.Transform {
     }
 
     const result =
-      chunk !== undefined && chunk !== null
-        ? super.end({ chunk, encoding })
-        : super.end()
+      chunk !== undefined && chunk !== null ? super.end({ chunk, encoding }) : super.end()
 
     if (cb) this.once('finish', () => cb(null))
 

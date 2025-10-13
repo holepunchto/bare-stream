@@ -38,14 +38,9 @@ export interface ReadableStream extends AsyncIterable<unknown> {
 }
 
 export class ReadableStream {
-  constructor(
-    underlyingSource?: UnderlyingSource,
-    queuingStrategy?: CustomQueuingStrategy
-  )
+  constructor(underlyingSource?: UnderlyingSource, queuingStrategy?: CustomQueuingStrategy)
 
-  static from(
-    iterable: unknown | unknown[] | AsyncIterable<unknown>
-  ): ReadableStream
+  static from(iterable: unknown | unknown[] | AsyncIterable<unknown>): ReadableStream
 }
 
 export interface QueuingStrategyOptions {
