@@ -44,7 +44,7 @@
     "bare-events": "^2.5.4",
     "brittle": "^3.5.2",
     "prettier": "^3.3.3",
-    "prettier-config-standard": "^7.0.0"
+    "prettier-config-holepunch": "^2.0.0"
   },
   "peerDependencies": {
     "bare-buffer": "*",

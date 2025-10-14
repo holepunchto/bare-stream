@@ -20,8 +20,7 @@ interface StreamOptions<S extends Stream = Stream> {
   destroy?(this: S, err: Error | null, cb: StreamCallback): void
 }
 
-interface Stream<M extends StreamEvents = StreamEvents>
-  extends EventEmitter<M> {
+interface Stream<M extends StreamEvents = StreamEvents> extends EventEmitter<M> {
   _open(cb: StreamCallback): void
   _predestroy(): void
   _destroy(err: Error | null, cb: StreamCallback): void
@@ -43,8 +42,7 @@ interface ReadableEvents extends StreamEvents {
   piping: [dest: Writable]
 }
 
-interface ReadableOptions<S extends Readable = Readable>
-  extends StreamOptions<S> {
+interface ReadableOptions<S extends Readable = Readable> extends StreamOptions<S> {
   encoding?: BufferEncoding
   highWaterMark?: number
   read?(this: S, size: number): void
@@ -67,15 +65,10 @@ interface Readable<M extends ReadableEvents = ReadableEvents>
   setEncoding(encoding: BufferEncoding): void
 }
 
-declare class Readable<
-  M extends ReadableEvents = ReadableEvents
-> extends Stream<M> {
+declare class Readable<M extends ReadableEvents = ReadableEvents> extends Stream<M> {
   constructor(opts?: ReadableOptions)
 
-  static from(
-    data: unknown | unknown[] | AsyncIterable<unknown>,
-    opts?: ReadableOptions
-  ): Readable
+  static from(data: unknown | unknown[] | AsyncIterable<unknown>, opts?: ReadableOptions): Readable
 
   static isBackpressured(rs: Readable): boolean
 
@@ -88,29 +81,15 @@ interface WritableEvents extends StreamEvents {
   pipe: [src: Readable]
 }
 
-interface WritableOptions<S extends Writable = Writable>
-  extends StreamOptions<S> {
-  write?(
-    this: S,
-    data: unknown,
-    encoding: StreamEncoding,
-    cb: StreamCallback
-  ): void
-  writev?(
-    this: S,
-    batch: { chunk: unknown; encoding: StreamEncoding }[],
-    cb: StreamCallback
-  ): void
+interface WritableOptions<S extends Writable = Writable> extends StreamOptions<S> {
+  write?(this: S, data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
+  writev?(this: S, batch: { chunk: unknown; encoding: StreamEncoding }[], cb: StreamCallback): void
   final?(this: S, cb: StreamCallback): void
 }
 
-interface Writable<M extends WritableEvents = WritableEvents>
-  extends Stream<M> {
+interface Writable<M extends WritableEvents = WritableEvents> extends Stream<M> {
   _write(data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
-  _writev(
-    batch: { chunk: unknown; encoding: StreamEncoding }[],
-    cb: StreamCallback
-  ): void
+  _writev(batch: { chunk: unknown; encoding: StreamEncoding }[], cb: StreamCallback): void
   _final(cb: StreamCallback): void
 
   readonly destroyed: boolean
@@ -126,9 +105,7 @@ interface Writable<M extends WritableEvents = WritableEvents>
   uncork(): void
 }
 
-declare class Writable<
-  M extends WritableEvents = WritableEvents
-> extends Stream<M> {
+declare class Writable<M extends WritableEvents = WritableEvents> extends Stream<M> {
   constructor(opts?: WritableOptions)
 
   static isBackpressured(ws: Writable): boolean
@@ -138,13 +115,9 @@ declare class Writable<
 
 interface DuplexEvents extends ReadableEvents, WritableEvents {}
 
-interface DuplexOptions<S extends Duplex = Duplex>
-  extends ReadableOptions<S>,
-    WritableOptions<S> {}
+interface DuplexOptions<S extends Duplex = Duplex> extends ReadableOptions<S>, WritableOptions<S> {}
 
-interface Duplex<M extends DuplexEvents = DuplexEvents>
-  extends Readable<M>,
-    Writable<M> {}
+interface Duplex<M extends DuplexEvents = DuplexEvents> extends Readable<M>, Writable<M> {}
 
 declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {
   constructor(opts?: DuplexOptions)
@@ -152,34 +125,21 @@ declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {
 
 interface TransformEvents extends DuplexEvents {}
 
-interface TransformOptions<S extends Transform = Transform>
-  extends DuplexOptions<S> {
-  transform?(
-    this: S,
-    data: unknown,
-    encoding: StreamEncoding,
-    cb: StreamCallback
-  ): void
+interface TransformOptions<S extends Transform = Transform> extends DuplexOptions<S> {
+  transform?(this: S, data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   flush?(this: S, cb: StreamCallback): void
 }
 
-interface Transform<M extends TransformEvents = TransformEvents>
-  extends Duplex<M> {
+interface Transform<M extends TransformEvents = TransformEvents> extends Duplex<M> {
   _transform(data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   _flush(cb: StreamCallback): void
 }
 
-declare class Transform<
-  M extends TransformEvents = TransformEvents
-> extends Duplex<M> {
+declare class Transform<M extends TransformEvents = TransformEvents> extends Duplex<M> {
   constructor(opts?: TransformOptions)
 }
 
-type Pipeline<S extends Writable> = [
-  src: Readable,
-  ...transforms: Duplex[],
-  dest: S
-]
+type Pipeline<S extends Writable> = [src: Readable, ...transforms: Duplex[], dest: S]
 
 declare namespace Stream {
   export {
@@ -201,16 +161,11 @@ declare namespace Stream {
     Transform as PassThrough
   }
 
-  export function pipeline<S extends Writable>(
-    streams: Pipeline<S>,
-    cb?: StreamCallback
-  ): S
+  export function pipeline<S extends Writable>(streams: Pipeline<S>, cb?: StreamCallback): S
 
   export function pipeline<S extends Writable>(...args: Pipeline<S>): S
 
-  export function pipeline<S extends Writable>(
-    ...args: [...Pipeline<S>, cb: StreamCallback]
-  ): S
+  export function pipeline<S extends Writable>(...args: [...Pipeline<S>, cb: StreamCallback]): S
 
   export function finished(
     stream: Stream,
@@ -228,10 +183,7 @@ declare namespace Stream {
 
   export function isDisturbed(stream: Stream): boolean
 
-  export function getStreamError(
-    stream: Stream,
-    opts?: { all?: boolean }
-  ): Error | null
+  export function getStreamError(stream: Stream, opts?: { all?: boolean }): Error | null
 }
 
 export = Stream

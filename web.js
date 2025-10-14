@@ -26,20 +26,12 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
         return resolve({ value, done: false })
       }
 
-      stream
-        .once('readable', onreadable)
-        .once('close', onclose)
-        .once('error', onerror)
+      stream.once('readable', onreadable).once('close', onclose).once('error', onerror)
 
       function onreadable() {
         const value = stream.read()
 
-        ondone(
-          null,
-          value === null
-            ? { value: undefined, done: true }
-            : { value, done: false }
-        )
+        ondone(null, value === null ? { value: undefined, done: true } : { value, done: false })
       }
 
       function onclose() {
@@ -51,10 +43,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
       }
 
       function ondone(err, value) {
-        stream
-          .off('readable', onreadable)
-          .off('close', onclose)
-          .off('error', onerror)
+        stream.off('readable', onreadable).off('close', onclose).off('error', onerror)
 
         if (err) reject(err)
         else resolve(value)
@@ -65,9 +54,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   cancel(reason) {
     if (this._stream.destroyed) return Promise.resolve()
 
-    return new Promise((resolve) =>
-      this._stream.once('close', resolve).destroy(reason)
-    )
+    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
 }
 
@@ -78,10 +65,7 @@ exports.ReadableStreamDefaultController = class ReadableStreamDefaultController 
   }
 
   get desiredSize() {
-    return (
-      this._stream._readableState.highWaterMark -
-      this._stream._readableState.buffered
-    )
+    return this._stream._readableState.highWaterMark - this._stream._readableState.buffered
   }
 
   enqueue(data) {
@@ -139,9 +123,7 @@ class ReadableStream {
   cancel(reason) {
     if (this._stream.destroyed) return Promise.resolve()
 
-    return new Promise((resolve) =>
-      this._stream.once('close', resolve).destroy(reason)
-    )
+    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
 
   pipeTo(destination) {
