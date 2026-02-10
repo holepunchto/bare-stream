@@ -344,15 +344,23 @@ class WritableStream {
 }
 
 async function _write(fn, data, cb) {
-  await fn(data, this._controller)
+  try {
+    await fn(data, this._controller)
 
-  cb(null)
+    cb(null)
+  } catch (err) {
+    cb(err)
+  }
 }
 
 async function destroy(closing, cb) {
-  await closing
+  try {
+    await closing
 
-  cb(null)
+    cb(null)
+  } catch (err) {
+    cb(err)
+  }
 }
 
 exports.WritableStream = WritableStream
