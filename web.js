@@ -275,12 +275,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   close() {
     if (this._stream.destroyed) return Promise.resolve()
 
-    const { promise, resolve } = Promise.withResolvers()
-
-    this._stream.once('finish', resolve)
-    this._stream.end()
-
-    return promise
+    return new Promise((resolve) => this._stream.once('finish', resolve).end())
   }
 
   get desiredSize() {
@@ -308,26 +303,32 @@ exports.WritableStreamDefaultController = class WritableStreamDefaultController 
 
 // https://streams.spec.whatwg.org/#writablestream
 class WritableStream {
-  constructor(underlyingSink = {}, strategy = {}) {
-    if (strategy === undefined) strategy = new exports.CountQueuingStrategy()
+  constructor(underlyingSink = {}, queuingStrategy = {}) {
+    if (isStreamx(underlyingSink)) {
+      this._stream = underlyingSink
+    } else {
+      if (queuingStrategy === undefined) {
+        queuingStrategy = new exports.CountQueuingStrategy()
+      }
 
-    const { start, write, close } = underlyingSink
-    const { highWaterMark = 1, size = defaultSize } = strategy
+      const { start, write, close } = underlyingSink
+      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-    this._stream = new Writable({ highWaterMark, byteLength: size })
+      this._stream = new Writable({ highWaterMark, byteLength: size })
 
-    this._controller = new exports.WritableStreamDefaultController(this)
+      this._controller = new exports.WritableStreamDefaultController(this)
 
-    if (start) {
-      this._stream._open = open.bind(this, start.call(this, this._controller))
-    }
+      if (start) {
+        this._stream._open = open.bind(this, start.call(this, this._controller))
+      }
 
-    if (write) {
-      this._stream._write = _write.bind(this, write)
-    }
+      if (write) {
+        this._stream._write = _write.bind(this, write)
+      }
 
-    if (close) {
-      this._stream._destroy = destroy.bind(this, close.call(this))
+      if (close) {
+        this._stream._destroy = destroy.bind(this, close.call(this))
+      }
     }
   }
 
@@ -335,11 +336,11 @@ class WritableStream {
     return new exports.WritableStreamDefaultWriter(this)
   }
 
-  async close() {
+  close() {
     if (this._controller._status === 'errored') return Promise.reject(this._controller._error)
     if (this._stream.destroyed) return Promise.resolve()
 
-    await this.getWriter().close()
+    return this.getWriter().close()
   }
 }
 
