@@ -1,4 +1,4 @@
-const { Readable, getStreamError, isStreamx, isDisturbed } = require('streamx')
+const { Readable, Writable, getStreamError, isStreamx, isDisturbed } = require('streamx')
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
@@ -175,6 +175,8 @@ class ReadableStream {
   }
 
   pipeTo(destination) {
+    if (destination instanceof WritableStream) destination = destination._stream
+
     return new Promise((resolve, reject) =>
       this._stream.pipe(destination, (err) => {
         err ? reject(err) : resolve()
@@ -257,3 +259,100 @@ exports.isReadableStream = function isReadableStream(value) {
 exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
   return isDisturbed(stream._stream)
 }
+
+// https://streams.spec.whatwg.org/#writablestreamdefaultwriter
+exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
+  constructor(stream) {
+    this._stream = stream._stream
+  }
+
+  async write(chunk) {
+    this._stream.write(chunk)
+
+    await Writable.drained(this._stream)
+  }
+
+  async close() {
+    if (this._stream.destroyed) return Promise.resolve()
+
+    const { promise, resolve } = Promise.withResolvers()
+
+    this._stream.once('finish', resolve)
+    this._stream.end()
+
+    return promise
+  }
+
+  get desiredSize() {
+    return this._stream._writableState.highWaterMark - this._stream._writableState.buffered
+  }
+}
+
+// https://streams.spec.whatwg.org/#writablestreamdefaultcontroller
+exports.WritableStreamDefaultController = class WritableStreamDefaultController {
+  constructor(stream) {
+    this._stream = stream._stream
+    this._status = 'writable'
+    this._error = null
+  }
+
+  error(error) {
+    if (this._status !== 'writable') return
+
+    this._error = error
+    this._status = 'errored'
+
+    this._stream.destroy()
+  }
+}
+
+// https://streams.spec.whatwg.org/#writablestream
+class WritableStream {
+  constructor(underlyingSink = {}, strategy = {}) {
+    if (strategy === undefined) strategy = new exports.CountQueuingStrategy()
+
+    const { start, write, close } = underlyingSink
+    const { highWaterMark = 1, size = defaultSize } = strategy
+
+    this._stream = new Writable({ highWaterMark, byteLength: size })
+
+    this._controller = new exports.WritableStreamDefaultController(this)
+
+    if (start) {
+      this._stream._open = open.bind(this, start.call(this, this._controller))
+    }
+
+    if (write) {
+      this._stream._write = _write.bind(this, write)
+    }
+
+    if (close) {
+      this._stream._destroy = destroy.bind(this, close.call(this))
+    }
+  }
+
+  getWriter() {
+    return new exports.WritableStreamDefaultWriter(this)
+  }
+
+  async close() {
+    if (this._controller._status === 'errored') return Promise.reject(this._controller._error)
+    if (this._stream.destroyed) return Promise.resolve()
+
+    await this.getWriter().close()
+  }
+}
+
+async function _write(fn, data, cb) {
+  await fn(data, this._controller)
+
+  cb(null)
+}
+
+async function destroy(closing, cb) {
+  await closing
+
+  cb(null)
+}
+
+exports.WritableStream = WritableStream
