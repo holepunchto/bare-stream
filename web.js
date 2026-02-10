@@ -338,7 +338,6 @@ class WritableStream {
 
   close() {
     if (this._controller._status === 'errored') return Promise.reject(this._controller._error)
-    if (this._stream.destroyed) return Promise.resolve()
 
     return this.getWriter().close()
   }
