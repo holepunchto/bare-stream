@@ -272,7 +272,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
     await Writable.drained(this._stream)
   }
 
-  async close() {
+  close() {
     if (this._stream.destroyed) return Promise.resolve()
 
     const { promise, resolve } = Promise.withResolvers()
