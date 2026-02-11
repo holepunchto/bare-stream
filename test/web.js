@@ -354,9 +354,7 @@ test('WritableStream - close', async (t) => {
 
   const stream = new WritableStream()
 
-  await stream.close()
-
-  t.pass()
+  await t.execution(stream.close())
 })
 
 test('WritableStream - error', async (t) => {
