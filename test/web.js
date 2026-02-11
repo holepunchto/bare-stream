@@ -325,7 +325,7 @@ test('ReadableStream - custom size function', async (t) => {
 })
 
 test('WritableStream - writer', async (t) => {
-  t.plan(5)
+  t.plan(6)
 
   const stream = new WritableStream({
     start(controller) {
@@ -346,7 +346,7 @@ test('WritableStream - writer', async (t) => {
 
   await writer.write('foo')
 
-  writer.close()
+  await t.execution(writer.close(), 'writer closed')
 })
 
 test('WritableStream - close', async (t) => {
