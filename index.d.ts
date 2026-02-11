@@ -49,8 +49,7 @@ interface ReadableOptions<S extends Readable = Readable> extends StreamOptions<S
 }
 
 interface Readable<M extends ReadableEvents = ReadableEvents>
-  extends Stream<M>,
-    AsyncIterable<unknown> {
+  extends Stream<M>, AsyncIterable<unknown> {
   _read(size: number): void
 
   push(data: unknown | null, encoding?: BufferEncoding): boolean

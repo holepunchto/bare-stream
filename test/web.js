@@ -106,6 +106,28 @@ test('pull', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
+test('tee', async (t) => {
+  t.plan(4)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue('foo')
+      controller.close()
+    }
+  })
+
+  const [branchA, branchB] = stream.tee()
+
+  const aReader = branchA.getReader()
+  const bReader = branchB.getReader()
+
+  t.alike(await aReader.read(), { value: 'foo', done: false })
+  t.alike(await bReader.read(), { value: 'foo', done: false })
+
+  t.alike(await aReader.read(), { value: undefined, done: true })
+  t.alike(await bReader.read(), { value: undefined, done: true })
+})
+
 test('only trigger pull after start is finished', async (t) => {
   t.plan(1)
 
