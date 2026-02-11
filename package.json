@@ -37,7 +37,8 @@
   },
   "homepage": "https://github.com/holepunchto/bare-stream#readme",
   "dependencies": {
-    "streamx": "^2.21.0"
+    "streamx": "^2.21.0",
+    "teex": "^1.0.1"
   },
   "devDependencies": {
     "bare-buffer": "^3.0.0",

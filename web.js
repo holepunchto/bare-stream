@@ -1,4 +1,5 @@
 const { Readable, getStreamError, isStreamx, isDisturbed } = require('streamx')
+const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
 
@@ -124,6 +125,12 @@ class ReadableStream {
     if (this._stream.destroyed) return Promise.resolve()
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
+  }
+
+  tee() {
+    const [a, b] = tee(this._stream)
+
+    return [new ReadableStream(a), new ReadableStream(b)]
   }
 
   pipeTo(destination) {
