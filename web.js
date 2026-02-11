@@ -275,7 +275,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   close() {
     if (this._stream.destroyed) return Promise.resolve()
 
-    return new Promise((resolve) => this._stream.once('finish', resolve).end())
+    return new Promise((resolve) => this._stream.once('close', resolve).end())
   }
 
   get desiredSize() {
@@ -287,17 +287,6 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
 exports.WritableStreamDefaultController = class WritableStreamDefaultController {
   constructor(stream) {
     this._stream = stream._stream
-    this._status = 'writable'
-    this._error = null
-  }
-
-  error(error) {
-    if (this._status !== 'writable') return
-
-    this._error = error
-    this._status = 'errored'
-
-    this._stream.destroy()
   }
 }
 
@@ -337,9 +326,9 @@ class WritableStream {
   }
 
   close() {
-    if (this._controller._status === 'errored') return Promise.reject(this._controller._error)
+    if (this._stream.destroyed) return Promise.resolve()
 
-    return this.getWriter().close()
+    return new Promise((resolve) => this._stream.once('close', resolve).end())
   }
 }
 

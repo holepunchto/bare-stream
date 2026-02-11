@@ -357,18 +357,6 @@ test('WritableStream - close', async (t) => {
   await t.execution(stream.close())
 })
 
-test('WritableStream - error', async (t) => {
-  t.plan(1)
-
-  const stream = new WritableStream({
-    start(controller) {
-      controller.error('boom!')
-    }
-  })
-
-  t.exception(() => stream.close(), 'boom!')
-})
-
 test('ReadableStream.pipeTo(WritableStream)', async (t) => {
   t.plan(1)
 
