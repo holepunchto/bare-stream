@@ -6,11 +6,27 @@ const readableKind = Symbol.for('bare.stream.readable.kind')
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
-    this._stream = stream._stream
+    this.stream = stream
+
+    this._closed = Promise.withResolvers()
+
+    this.stream._stream.once('close', onclose.bind(this)).once('error', onerror.bind(this))
+
+    function onclose() {
+      this._closed.resolve()
+    }
+
+    function onerror() {
+      this._closed.reject()
+    }
+  }
+
+  get closed() {
+    return this._closed.promise
   }
 
   read() {
-    const stream = this._stream
+    const stream = this.stream._stream
 
     return new Promise((resolve, reject) => {
       const err = getStreamError(stream)
@@ -52,10 +68,17 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
     })
   }
 
-  cancel(reason) {
-    if (this._stream.destroyed) return Promise.resolve()
+  releaseLock() {
+    this._closed.reject()
+    this.stream._releaseLock()
+  }
 
-    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
+  cancel(reason) {
+    const stream = this.stream._stream
+
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
   }
 }
 
@@ -115,14 +138,24 @@ class ReadableStream {
         this._stream.once('error', cancel)
       }
     }
+
+    this._reader = null
   }
 
   get [readableKind]() {
     return ReadableStream[readableKind]
   }
 
+  get locked() {
+    return this._reader !== null
+  }
+
   getReader() {
-    return new exports.ReadableStreamDefaultReader(this)
+    if (this.locked) throw new TypeError('ReadableStream is locked')
+
+    this._reader = new exports.ReadableStreamDefaultReader(this)
+
+    return this._reader
   }
 
   cancel(reason) {
@@ -135,6 +168,10 @@ class ReadableStream {
     const [a, b] = tee(this._stream)
 
     return [new ReadableStream(a), new ReadableStream(b)]
+  }
+
+  _releaseLock() {
+    this._reader = null
   }
 
   pipeTo(destination) {
