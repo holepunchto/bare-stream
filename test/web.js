@@ -40,13 +40,15 @@ test('error', async (t) => {
 })
 
 test('cancel', async (t) => {
-  t.plan(1)
+  t.plan(2)
 
-  const stream = new ReadableStream()
+  const stream = new ReadableStream({
+    cancel(reason) {
+      t.is(reason, 'I am bored')
+    }
+  })
 
-  await stream.cancel()
-
-  t.pass()
+  await t.execution(stream.cancel('I am bored'))
 })
 
 test('from', async (t) => {

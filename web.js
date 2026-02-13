@@ -96,7 +96,7 @@ class ReadableStream {
         queuingStrategy = new exports.CountQueuingStrategy()
       }
 
-      const { start, pull } = underlyingSource
+      const { start, pull, cancel } = underlyingSource
       const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
       this._stream = new Readable({ highWaterMark, byteLength: size })
@@ -109,6 +109,10 @@ class ReadableStream {
 
       if (pull) {
         this._stream._read = read.bind(this, pull.bind(this, controller))
+      }
+
+      if (cancel) {
+        this._stream.once('error', cancel)
       }
     }
   }
