@@ -2,6 +2,7 @@ const { Readable, Writable, getStreamError, isStreamx, isDisturbed } = require('
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
+const writableKind = Symbol.for('bare.stream.writable.kind')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -175,7 +176,7 @@ class ReadableStream {
   }
 
   pipeTo(destination) {
-    if (destination instanceof WritableStream) destination = destination._stream
+    if (isWritableStream(destination)) destination = destination._stream
 
     return new Promise((resolve, reject) =>
       this._stream.pipe(destination, (err) => {
@@ -292,6 +293,10 @@ exports.WritableStreamDefaultController = class WritableStreamDefaultController 
 
 // https://streams.spec.whatwg.org/#writablestream
 class WritableStream {
+  static get [writableKind]() {
+    return 0 // Compatibility version
+  }
+
   constructor(underlyingSink = {}, queuingStrategy = {}) {
     if (isStreamx(underlyingSink)) {
       this._stream = underlyingSink
@@ -319,6 +324,10 @@ class WritableStream {
         this._stream._destroy = destroy.bind(this, close.call(this))
       }
     }
+  }
+
+  get [writableKind]() {
+    return WritableStream[writableKind]
   }
 
   getWriter() {
@@ -353,3 +362,15 @@ async function destroy(closing, cb) {
 }
 
 exports.WritableStream = WritableStream
+
+const isWritableStream = function isWritableStream(value) {
+  if (value instanceof WritableStream) return true
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value[writableKind] === WritableStream[writableKind]
+  )
+}
+
+exports.isWritableStream = isWritableStream
