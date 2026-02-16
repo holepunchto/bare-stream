@@ -1,7 +1,13 @@
 const test = require('brittle')
-const { ReadableStream, CountQueuingStrategy, ByteLengthQueuingStrategy } = require('../web')
+const {
+  ReadableStream,
+  CountQueuingStrategy,
+  ByteLengthQueuingStrategy,
+  WritableStream,
+  WritableStreamDefaultController
+} = require('../web')
 
-test('basic', async (t) => {
+test('ReadableStream', async (t) => {
   t.plan(2)
 
   const read = []
@@ -24,7 +30,7 @@ test('basic', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('error', async (t) => {
+test('ReadableStream - error', async (t) => {
   t.plan(1)
 
   const stream = new ReadableStream({
@@ -39,7 +45,7 @@ test('error', async (t) => {
   }, 'boom!')
 })
 
-test('cancel', async (t) => {
+test('ReadableStream - cancel', async (t) => {
   t.plan(2)
 
   const stream = new ReadableStream({
@@ -51,7 +57,7 @@ test('cancel', async (t) => {
   await t.execution(stream.cancel('I am bored'))
 })
 
-test('from', async (t) => {
+test('ReadableStream - from', async (t) => {
   t.plan(2)
 
   async function* asyncIterator() {
@@ -73,7 +79,7 @@ test('from', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('reader', async (t) => {
+test('ReadableStream - reader', async (t) => {
   t.plan(6)
 
   const stream = new ReadableStream({
@@ -96,7 +102,7 @@ test('reader', async (t) => {
   await t.execution(reader.closed, 'reader closed')
 })
 
-test('pull', async (t) => {
+test('ReadableStream - pull', async (t) => {
   t.plan(1)
 
   let count = 0
@@ -113,7 +119,7 @@ test('pull', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('locked', async (t) => {
+test('ReadableStream - locked', async (t) => {
   t.plan(3)
 
   const stream = new ReadableStream()
@@ -129,7 +135,7 @@ test('locked', async (t) => {
   t.is(stream.locked, false)
 })
 
-test('tee', async (t) => {
+test('ReadableStream - tee', async (t) => {
   t.plan(4)
 
   const stream = new ReadableStream({
@@ -151,7 +157,7 @@ test('tee', async (t) => {
   t.alike(await bReader.read(), { value: undefined, done: true })
 })
 
-test('only trigger pull after start is finished', async (t) => {
+test('ReadableStream - only trigger pull after start is finished', async (t) => {
   t.plan(1)
 
   let foo
@@ -170,7 +176,7 @@ test('only trigger pull after start is finished', async (t) => {
   await stream.getReader().read()
 })
 
-test('count queuing strategy', async (t) => {
+test('CountQueuingStrategy', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -206,7 +212,7 @@ test('count queuing strategy', async (t) => {
   reader.read()
 })
 
-test('custom high water mark', async (t) => {
+test('ReadableStream - custom high water mark', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -242,7 +248,7 @@ test('custom high water mark', async (t) => {
   reader.read()
 })
 
-test('byte length queuing strategy', async (t) => {
+test('ByteLengthQueuingStrategy', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -280,7 +286,7 @@ test('byte length queuing strategy', async (t) => {
   reader.read()
 })
 
-test('custom size function', async (t) => {
+test('ReadableStream - custom size function', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -316,4 +322,62 @@ test('custom size function', async (t) => {
 
   reader = stream.getReader()
   reader.read()
+})
+
+test('WritableStream - writer', async (t) => {
+  t.plan(6)
+
+  const stream = new WritableStream({
+    start(controller) {
+      t.ok(controller instanceof WritableStreamDefaultController)
+    },
+    write(chunk, controller) {
+      t.is(chunk, 'foo')
+      t.ok(controller instanceof WritableStreamDefaultController)
+    },
+    close() {
+      t.pass('closed callback')
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  t.is(writer.desiredSize, 1)
+
+  await writer.write('foo')
+
+  await t.execution(writer.close(), 'writer closed')
+})
+
+test('WritableStream - close', async (t) => {
+  t.plan(1)
+
+  const stream = new WritableStream()
+
+  await t.execution(stream.close())
+})
+
+test('ReadableStream.pipeTo(WritableStream)', async (t) => {
+  t.plan(1)
+
+  const written = []
+
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue(1)
+      controller.enqueue(2)
+      controller.enqueue(3)
+      controller.close()
+    }
+  })
+
+  const writable = new WritableStream({
+    write(chunk) {
+      written.push(chunk)
+    }
+  })
+
+  await readable.pipeTo(writable)
+
+  t.alike(written, [1, 2, 3])
 })
