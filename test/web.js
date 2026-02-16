@@ -445,7 +445,7 @@ test('WritableStream - ready', async (t) => {
   t.ok(writer.ready)
   await t.execution(writer.ready)
 
-  writer.abort('reason')
+  writer.abort()
 
   await t.exception(writer.ready)
 })

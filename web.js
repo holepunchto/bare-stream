@@ -79,7 +79,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
     this.stream._releaseLock()
   }
 
-  cancel(reason) {
+  cancel(reason = 'ReadableStream was cancelled') {
     return this.stream.cancel(reason)
   }
 }
@@ -160,7 +160,7 @@ class ReadableStream {
     return this._reader
   }
 
-  cancel(reason) {
+  cancel(reason = 'ReadableStream was cancelled') {
     if (this._stream.destroyed) return Promise.resolve()
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
@@ -326,7 +326,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
     return new Promise((resolve) => stream.once('close', resolve).end())
   }
 
-  abort(reason) {
+  abort(reason = 'WritableStream was aborted') {
     return this.stream.abort(reason)
   }
 }
@@ -399,7 +399,7 @@ class WritableStream {
     return this._writer
   }
 
-  abort(reason) {
+  abort(reason = 'WritableStream was aborted') {
     if (this._stream.destroyed) return Promise.resolve()
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
