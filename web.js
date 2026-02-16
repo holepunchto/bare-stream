@@ -266,12 +266,31 @@ exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
 exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   constructor(stream) {
     this.stream = stream
+
+    this._closed = Promise.withResolvers()
+
+    this.stream._stream.once('close', onclose.bind(this)).once('error', onerror.bind(this))
+
+    function onclose() {
+      this._closed.resolve()
+    }
+
+    function onerror() {
+      this._closed.reject()
+    }
+
+    // Avoid unhandled exceptions
+    this._closed.promise.catch(noop)
   }
 
   get desiredSize() {
     const stream = this.stream._stream
 
     return stream._writableState.highWaterMark - stream._writableState.buffered
+  }
+
+  get closed() {
+    return this._closed.promise
   }
 
   async write(chunk) {
@@ -287,6 +306,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   releaseLock() {
+    this._closed.reject()
     this.stream._releaseLock()
   }
 
