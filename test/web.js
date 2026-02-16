@@ -40,13 +40,15 @@ test('error', async (t) => {
 })
 
 test('cancel', async (t) => {
-  t.plan(1)
+  t.plan(2)
 
-  const stream = new ReadableStream()
+  const stream = new ReadableStream({
+    cancel(reason) {
+      t.is(reason, 'I am bored')
+    }
+  })
 
-  await stream.cancel()
-
-  t.pass()
+  await t.execution(stream.cancel('I am bored'))
 })
 
 test('from', async (t) => {
@@ -72,7 +74,7 @@ test('from', async (t) => {
 })
 
 test('reader', async (t) => {
-  t.plan(3)
+  t.plan(6)
 
   const stream = new ReadableStream({
     start(controller) {
@@ -84,9 +86,14 @@ test('reader', async (t) => {
 
   const reader = stream.getReader()
 
+  t.exception.all(() => stream.getReader(), /ReadableStream is locked/)
+
   t.alike(await reader.read(), { value: 1, done: false })
   t.alike(await reader.read(), { value: 2, done: false })
   t.alike(await reader.read(), { value: undefined, done: true })
+
+  t.ok(reader.closed)
+  await t.execution(reader.closed, 'reader closed')
 })
 
 test('pull', async (t) => {
@@ -104,6 +111,22 @@ test('pull', async (t) => {
   for await (const value of stream) read.push(value)
 
   t.alike(read, [1, 2, 3])
+})
+
+test('locked', async (t) => {
+  t.plan(3)
+
+  const stream = new ReadableStream()
+
+  const reader = stream.getReader()
+
+  t.is(stream.locked, true)
+
+  reader.releaseLock()
+
+  await t.exception.all(async () => reader.closed, 'called releaseLock before stream closure')
+
+  t.is(stream.locked, false)
 })
 
 test('tee', async (t) => {
