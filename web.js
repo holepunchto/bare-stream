@@ -172,10 +172,6 @@ class ReadableStream {
     return [new ReadableStream(a), new ReadableStream(b)]
   }
 
-  _releaseLock() {
-    this._reader = null
-  }
-
   pipeTo(destination) {
     if (isWritableStream(destination)) destination = destination._stream
 
@@ -184,6 +180,10 @@ class ReadableStream {
         err ? reject(err) : resolve()
       })
     )
+  }
+
+  _releaseLock() {
+    this._reader = null
   }
 
   [Symbol.asyncIterator]() {
@@ -268,6 +268,12 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
     this.stream = stream
   }
 
+  get desiredSize() {
+    const stream = this.stream._stream
+
+    return stream._writableState.highWaterMark - stream._writableState.buffered
+  }
+
   async write(chunk) {
     const stream = this.stream._stream
 
@@ -280,6 +286,10 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
     await Writable.drained(stream)
   }
 
+  releaseLock() {
+    this.stream._releaseLock()
+  }
+
   close() {
     const stream = this.stream._stream
 
@@ -290,12 +300,6 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
 
   abort(reason) {
     return this.stream.abort(reason)
-  }
-
-  get desiredSize() {
-    const stream = this.stream._stream
-
-    return stream._writableState.highWaterMark - stream._writableState.buffered
   }
 }
 
@@ -347,14 +351,24 @@ class WritableStream {
         this._stream.once('error', abort)
       }
     }
+
+    this._writer = null
   }
 
   get [writableKind]() {
     return WritableStream[writableKind]
   }
 
+  get locked() {
+    return this._writer !== null
+  }
+
   getWriter() {
-    return new exports.WritableStreamDefaultWriter(this)
+    if (this.locked) throw new TypeError('WritableStream is locked')
+
+    this._writer = new exports.WritableStreamDefaultWriter(this)
+
+    return this._writer
   }
 
   abort(reason) {
@@ -367,6 +381,10 @@ class WritableStream {
     if (this._stream.destroyed) return Promise.resolve()
 
     return new Promise((resolve) => this._stream.once('close', resolve).end())
+  }
+
+  _releaseLock() {
+    this._writer = null
   }
 }
 

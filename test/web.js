@@ -414,6 +414,22 @@ test('WritableStream - writer.abort', async (t) => {
   await t.execution(writer.abort('reason'))
 })
 
+test('WritableStream - locked', async (t) => {
+  t.plan(2)
+
+  const stream = new WritableStream()
+
+  const writer = stream.getWriter()
+
+  t.is(stream.locked, true)
+
+  writer.releaseLock()
+
+  // await t.exception.all(reader.closed, 'called releaseLock before stream closure')
+
+  t.is(stream.locked, false)
+})
+
 test('ReadableStream.pipeTo(WritableStream)', async (t) => {
   t.plan(1)
 
