@@ -50,11 +50,25 @@ test('ReadableStream - cancel', async (t) => {
 
   const stream = new ReadableStream({
     cancel(reason) {
-      t.is(reason, 'I am bored')
+      t.is(reason, 'reason')
     }
   })
 
-  await t.execution(stream.cancel('I am bored'))
+  await t.execution(stream.cancel('reason'))
+})
+
+test('ReadableStream - reader.cancel', async (t) => {
+  t.plan(2)
+
+  const stream = new ReadableStream({
+    cancel(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  const reader = stream.getReader()
+
+  await t.execution(reader.cancel('reason'))
 })
 
 test('ReadableStream - from', async (t) => {
@@ -355,6 +369,9 @@ test('WritableStream - error', async (t) => {
   const stream = new WritableStream({
     start(controller) {
       controller.error('boom!')
+    },
+    abort(reason) {
+      // t.fail()
     }
   })
 
@@ -369,6 +386,32 @@ test('WritableStream - close', async (t) => {
   const stream = new WritableStream()
 
   await t.execution(stream.close())
+})
+
+test('WritableStream - abort', async (t) => {
+  t.plan(2)
+
+  const stream = new WritableStream({
+    abort(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  await t.execution(stream.abort('reason'))
+})
+
+test('WritableStream - writer.abort', async (t) => {
+  t.plan(2)
+
+  const stream = new WritableStream({
+    abort(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await t.execution(writer.abort('reason'))
 })
 
 test('ReadableStream.pipeTo(WritableStream)', async (t) => {

@@ -4,6 +4,8 @@ const tee = require('teex')
 const readableKind = Symbol.for('bare.stream.readable.kind')
 const writableKind = Symbol.for('bare.stream.writable.kind')
 
+function noop() {}
+
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
@@ -20,6 +22,9 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
     function onerror() {
       this._closed.reject()
     }
+
+    // Avoid unhandled exceptions
+    this._closed.promise.catch(noop)
   }
 
   get closed() {
@@ -75,11 +80,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   cancel(reason) {
-    const stream = this.stream._stream
-
-    if (stream.destroyed) return Promise.resolve()
-
-    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
+    return this.stream.cancel(reason)
   }
 }
 
@@ -264,27 +265,37 @@ exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
 // https://streams.spec.whatwg.org/#writablestreamdefaultwriter
 exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   constructor(stream) {
-    this._stream = stream._stream
+    this.stream = stream
   }
 
   async write(chunk) {
-    const err = getStreamError(this._stream)
+    const stream = this.stream._stream
+
+    const err = getStreamError(stream)
 
     if (err) return Promise.reject(err)
 
-    this._stream.write(chunk)
+    stream.write(chunk)
 
-    await Writable.drained(this._stream)
+    await Writable.drained(stream)
   }
 
   close() {
-    if (this._stream.destroyed) return Promise.resolve()
+    const stream = this.stream._stream
 
-    return new Promise((resolve) => this._stream.once('close', resolve).end())
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).end())
+  }
+
+  abort(reason) {
+    return this.stream.abort(reason)
   }
 
   get desiredSize() {
-    return this._stream._writableState.highWaterMark - this._stream._writableState.buffered
+    const stream = this.stream._stream
+
+    return stream._writableState.highWaterMark - stream._writableState.buffered
   }
 }
 
@@ -313,7 +324,7 @@ class WritableStream {
         queuingStrategy = new exports.CountQueuingStrategy()
       }
 
-      const { start, write, close } = underlyingSink
+      const { start, write, close, abort } = underlyingSink
       const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
       this._stream = new Writable({ highWaterMark, byteLength: size })
@@ -331,6 +342,10 @@ class WritableStream {
       if (close) {
         this._stream._destroy = destroy.bind(this, close.call(this))
       }
+
+      if (abort) {
+        this._stream.once('error', abort)
+      }
     }
   }
 
@@ -340,6 +355,12 @@ class WritableStream {
 
   getWriter() {
     return new exports.WritableStreamDefaultWriter(this)
+  }
+
+  abort(reason) {
+    if (this._stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
 
   close() {
