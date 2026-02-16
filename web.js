@@ -4,8 +4,6 @@ const tee = require('teex')
 const readableKind = Symbol.for('bare.stream.readable.kind')
 const writableKind = Symbol.for('bare.stream.writable.kind')
 
-function noop() {}
-
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
@@ -19,8 +17,8 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
       this._closed.resolve()
     }
 
-    function onerror() {
-      this._closed.reject()
+    function onerror(err) {
+      this._closed.reject(err)
     }
 
     // Avoid unhandled exceptions
@@ -75,12 +73,17 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   releaseLock() {
-    this._closed.reject()
+    this._closed.reject('Reader was released')
     this.stream._releaseLock()
+    this.stream = null
   }
 
   cancel(reason = 'ReadableStream was cancelled') {
-    return this.stream.cancel(reason)
+    const stream = this.stream._stream
+
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
   }
 }
 
@@ -162,6 +165,8 @@ class ReadableStream {
 
   cancel(reason = 'ReadableStream was cancelled') {
     if (this._stream.destroyed) return Promise.resolve()
+
+    if (this.locked) return Promise.reject(new TypeError('ReadableStream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
@@ -275,8 +280,8 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
       this._closed.resolve()
     }
 
-    function onerror() {
-      this._closed.reject()
+    function onerror(err) {
+      this._closed.reject(err)
     }
 
     // Avoid unhandled exceptions
@@ -314,8 +319,9 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   releaseLock() {
-    this._closed.reject()
+    this._closed.reject('Writer was released')
     this.stream._releaseLock()
+    this.stream = null
   }
 
   close() {
@@ -327,7 +333,11 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   abort(reason = 'WritableStream was aborted') {
-    return this.stream.abort(reason)
+    const stream = this.stream._stream
+
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
   }
 }
 
@@ -402,11 +412,15 @@ class WritableStream {
   abort(reason = 'WritableStream was aborted') {
     if (this._stream.destroyed) return Promise.resolve()
 
+    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
+
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
 
   close() {
     if (this._stream.destroyed) return Promise.resolve()
+
+    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).end())
   }
@@ -449,3 +463,5 @@ const isWritableStream = function isWritableStream(value) {
 }
 
 exports.isWritableStream = isWritableStream
+
+function noop() {}

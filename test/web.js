@@ -94,7 +94,7 @@ test('ReadableStream - from', async (t) => {
 })
 
 test('ReadableStream - reader', async (t) => {
-  t.plan(6)
+  t.plan(7)
 
   const stream = new ReadableStream({
     start(controller) {
@@ -107,6 +107,7 @@ test('ReadableStream - reader', async (t) => {
   const reader = stream.getReader()
 
   t.exception.all(() => stream.getReader(), /ReadableStream is locked/)
+  await t.exception.all(stream.cancel(), /ReadableStream is locked/)
 
   t.alike(await reader.read(), { value: 1, done: false })
   t.alike(await reader.read(), { value: 2, done: false })
@@ -144,7 +145,7 @@ test('ReadableStream - locked', async (t) => {
 
   reader.releaseLock()
 
-  await t.exception(reader.closed, 'called releaseLock before stream closure')
+  await t.exception.all(reader.closed, /released/)
 
   t.is(stream.locked, false)
 })
@@ -339,7 +340,7 @@ test('ReadableStream - custom size function', async (t) => {
 })
 
 test('WritableStream', async (t) => {
-  t.plan(9)
+  t.plan(11)
 
   const stream = new WritableStream({
     start(controller) {
@@ -357,6 +358,8 @@ test('WritableStream', async (t) => {
   const writer = stream.getWriter()
 
   t.exception.all(() => stream.getWriter(), /WritableStream is locked/)
+  await t.exception.all(stream.abort(), /WritableStream is locked/)
+  await t.exception.all(stream.close(), /WritableStream is locked/)
 
   t.is(writer.desiredSize, 1)
 
@@ -430,7 +433,7 @@ test('WritableStream - locked', async (t) => {
 
   writer.releaseLock()
 
-  await t.exception(writer.closed, 'called releaseLock before stream closure')
+  await t.exception.all(writer.closed, /released/)
 
   t.is(stream.locked, false)
 })
