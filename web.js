@@ -268,6 +268,10 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   async write(chunk) {
+    const err = getStreamError(this._stream)
+
+    if (err) return Promise.reject(err)
+
     this._stream.write(chunk)
 
     await Writable.drained(this._stream)
@@ -288,6 +292,10 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
 exports.WritableStreamDefaultController = class WritableStreamDefaultController {
   constructor(stream) {
     this._stream = stream._stream
+  }
+
+  error(err) {
+    this._stream.destroy(err)
   }
 }
 
