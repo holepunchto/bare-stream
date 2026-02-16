@@ -293,6 +293,14 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
     return this._closed.promise
   }
 
+  get ready() {
+    const stream = this.stream._stream
+
+    if (getStreamError(stream)) return Promise.reject()
+
+    return Writable.drained(stream).then()
+  }
+
   async write(chunk) {
     const stream = this.stream._stream
 
