@@ -17,9 +17,12 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
       this._closed.resolve()
     }
 
-    function onerror() {
-      this._closed.reject()
+    function onerror(err) {
+      this._closed.reject(err)
     }
+
+    // Avoid unhandled exceptions
+    this._closed.promise.catch(noop)
   }
 
   get closed() {
@@ -70,11 +73,12 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   releaseLock() {
-    this._closed.reject()
+    this._closed.reject('Reader was released')
     this.stream._releaseLock()
+    this.stream = null
   }
 
-  cancel(reason) {
+  cancel(reason = 'ReadableStream was cancelled') {
     const stream = this.stream._stream
 
     if (stream.destroyed) return Promise.resolve()
@@ -159,8 +163,10 @@ class ReadableStream {
     return this._reader
   }
 
-  cancel(reason) {
+  cancel(reason = 'ReadableStream was cancelled') {
     if (this._stream.destroyed) return Promise.resolve()
+
+    if (this.locked) return Promise.reject(new TypeError('ReadableStream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
@@ -171,10 +177,6 @@ class ReadableStream {
     return [new ReadableStream(a), new ReadableStream(b)]
   }
 
-  _releaseLock() {
-    this._reader = null
-  }
-
   pipeTo(destination) {
     if (isWritableStream(destination)) destination = destination._stream
 
@@ -183,6 +185,10 @@ class ReadableStream {
         err ? reject(err) : resolve()
       })
     )
+  }
+
+  _releaseLock() {
+    this._reader = null
   }
 
   [Symbol.asyncIterator]() {
@@ -264,23 +270,74 @@ exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
 // https://streams.spec.whatwg.org/#writablestreamdefaultwriter
 exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   constructor(stream) {
-    this._stream = stream._stream
-  }
+    this.stream = stream
 
-  async write(chunk) {
-    this._stream.write(chunk)
+    this._closed = Promise.withResolvers()
 
-    await Writable.drained(this._stream)
-  }
+    this.stream._stream.once('close', onclose.bind(this)).once('error', onerror.bind(this))
 
-  close() {
-    if (this._stream.destroyed) return Promise.resolve()
+    function onclose() {
+      this._closed.resolve()
+    }
 
-    return new Promise((resolve) => this._stream.once('close', resolve).end())
+    function onerror(err) {
+      this._closed.reject(err)
+    }
+
+    // Avoid unhandled exceptions
+    this._closed.promise.catch(noop)
   }
 
   get desiredSize() {
-    return this._stream._writableState.highWaterMark - this._stream._writableState.buffered
+    const stream = this.stream._stream
+
+    return stream._writableState.highWaterMark - stream._writableState.buffered
+  }
+
+  get closed() {
+    return this._closed.promise
+  }
+
+  get ready() {
+    const stream = this.stream._stream
+
+    if (getStreamError(stream)) return Promise.reject()
+
+    return Writable.drained(stream).then()
+  }
+
+  async write(chunk) {
+    const stream = this.stream._stream
+
+    const err = getStreamError(stream)
+
+    if (err) return Promise.reject(err)
+
+    stream.write(chunk)
+
+    await Writable.drained(stream)
+  }
+
+  releaseLock() {
+    this._closed.reject('Writer was released')
+    this.stream._releaseLock()
+    this.stream = null
+  }
+
+  close() {
+    const stream = this.stream._stream
+
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).end())
+  }
+
+  abort(reason = 'WritableStream was aborted') {
+    const stream = this.stream._stream
+
+    if (stream.destroyed) return Promise.resolve()
+
+    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
   }
 }
 
@@ -288,6 +345,10 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
 exports.WritableStreamDefaultController = class WritableStreamDefaultController {
   constructor(stream) {
     this._stream = stream._stream
+  }
+
+  error(err) {
+    this._stream.destroy(err)
   }
 }
 
@@ -305,7 +366,7 @@ class WritableStream {
         queuingStrategy = new exports.CountQueuingStrategy()
       }
 
-      const { start, write, close } = underlyingSink
+      const { start, write, close, abort } = underlyingSink
       const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
       this._stream = new Writable({ highWaterMark, byteLength: size })
@@ -323,21 +384,49 @@ class WritableStream {
       if (close) {
         this._stream._destroy = destroy.bind(this, close.call(this))
       }
+
+      if (abort) {
+        this._stream.once('error', abort)
+      }
     }
+
+    this._writer = null
   }
 
   get [writableKind]() {
     return WritableStream[writableKind]
   }
 
+  get locked() {
+    return this._writer !== null
+  }
+
   getWriter() {
-    return new exports.WritableStreamDefaultWriter(this)
+    if (this.locked) throw new TypeError('WritableStream is locked')
+
+    this._writer = new exports.WritableStreamDefaultWriter(this)
+
+    return this._writer
+  }
+
+  abort(reason = 'WritableStream was aborted') {
+    if (this._stream.destroyed) return Promise.resolve()
+
+    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
+
+    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
 
   close() {
     if (this._stream.destroyed) return Promise.resolve()
 
+    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
+
     return new Promise((resolve) => this._stream.once('close', resolve).end())
+  }
+
+  _releaseLock() {
+    this._writer = null
   }
 }
 
@@ -374,3 +463,5 @@ const isWritableStream = function isWritableStream(value) {
 }
 
 exports.isWritableStream = isWritableStream
+
+function noop() {}

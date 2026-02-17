@@ -50,11 +50,25 @@ test('ReadableStream - cancel', async (t) => {
 
   const stream = new ReadableStream({
     cancel(reason) {
-      t.is(reason, 'I am bored')
+      t.is(reason, 'reason')
     }
   })
 
-  await t.execution(stream.cancel('I am bored'))
+  await t.execution(stream.cancel('reason'))
+})
+
+test('ReadableStream - reader.cancel', async (t) => {
+  t.plan(2)
+
+  const stream = new ReadableStream({
+    cancel(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  const reader = stream.getReader()
+
+  await t.execution(reader.cancel('reason'))
 })
 
 test('ReadableStream - from', async (t) => {
@@ -80,7 +94,7 @@ test('ReadableStream - from', async (t) => {
 })
 
 test('ReadableStream - reader', async (t) => {
-  t.plan(6)
+  t.plan(7)
 
   const stream = new ReadableStream({
     start(controller) {
@@ -93,6 +107,7 @@ test('ReadableStream - reader', async (t) => {
   const reader = stream.getReader()
 
   t.exception.all(() => stream.getReader(), /ReadableStream is locked/)
+  await t.exception.all(stream.cancel(), /ReadableStream is locked/)
 
   t.alike(await reader.read(), { value: 1, done: false })
   t.alike(await reader.read(), { value: 2, done: false })
@@ -130,7 +145,7 @@ test('ReadableStream - locked', async (t) => {
 
   reader.releaseLock()
 
-  await t.exception.all(async () => reader.closed, 'called releaseLock before stream closure')
+  await t.exception.all(reader.closed, /released/)
 
   t.is(stream.locked, false)
 })
@@ -324,8 +339,8 @@ test('ReadableStream - custom size function', async (t) => {
   reader.read()
 })
 
-test('WritableStream - writer', async (t) => {
-  t.plan(6)
+test('WritableStream', async (t) => {
+  t.plan(11)
 
   const stream = new WritableStream({
     start(controller) {
@@ -342,11 +357,35 @@ test('WritableStream - writer', async (t) => {
 
   const writer = stream.getWriter()
 
+  t.exception.all(() => stream.getWriter(), /WritableStream is locked/)
+  await t.exception.all(stream.abort(), /WritableStream is locked/)
+  await t.exception.all(stream.close(), /WritableStream is locked/)
+
   t.is(writer.desiredSize, 1)
 
   await writer.write('foo')
 
   await t.execution(writer.close(), 'writer closed')
+
+  t.ok(writer.closed)
+  await t.execution(writer.closed, 'writer closed getter')
+})
+
+test('WritableStream - error', async (t) => {
+  t.plan(1)
+
+  const stream = new WritableStream({
+    start(controller) {
+      controller.error('boom!')
+    },
+    abort(reason) {
+      // t.fail()
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await t.exception(writer.write('foo'), /boom!/)
 })
 
 test('WritableStream - close', async (t) => {
@@ -355,6 +394,63 @@ test('WritableStream - close', async (t) => {
   const stream = new WritableStream()
 
   await t.execution(stream.close())
+})
+
+test('WritableStream - abort', async (t) => {
+  t.plan(2)
+
+  const stream = new WritableStream({
+    abort(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  await t.execution(stream.abort('reason'))
+})
+
+test('WritableStream - writer.abort', async (t) => {
+  t.plan(2)
+
+  const stream = new WritableStream({
+    abort(reason) {
+      t.is(reason, 'reason')
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await t.execution(writer.abort('reason'))
+})
+
+test('WritableStream - locked', async (t) => {
+  t.plan(3)
+
+  const stream = new WritableStream()
+
+  const writer = stream.getWriter()
+
+  t.is(stream.locked, true)
+
+  writer.releaseLock()
+
+  await t.exception.all(writer.closed, /released/)
+
+  t.is(stream.locked, false)
+})
+
+test('WritableStream - ready', async (t) => {
+  t.plan(3)
+
+  const stream = new WritableStream()
+
+  const writer = stream.getWriter()
+
+  t.ok(writer.ready)
+  await t.execution(writer.ready)
+
+  writer.abort()
+
+  await t.exception(writer.ready)
 })
 
 test('ReadableStream.pipeTo(WritableStream)', async (t) => {
