@@ -119,6 +119,10 @@ class ReadableStream {
     return 0 // Compatibility version
   }
 
+  static from(iterable) {
+    return new ReadableStream(Readable.from(iterable))
+  }
+
   constructor(underlyingSource = {}, queuingStrategy) {
     if (isStreamx(underlyingSource)) {
       this._stream = underlyingSource
@@ -135,11 +139,11 @@ class ReadableStream {
       const controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = _open.bind(this, start.call(this, controller))
+        this._stream._open = this._open.bind(this, start.call(this, controller))
       }
 
       if (pull) {
-        this._stream._read = _read.bind(this, pull.bind(this, controller))
+        this._stream._read = this._read.bind(this, pull.bind(this, controller))
       }
 
       if (cancel) {
@@ -181,45 +185,39 @@ class ReadableStream {
   }
 
   pipeTo(destination) {
-    if (isWritableStream(destination)) destination = destination._stream
-
     return new Promise((resolve, reject) =>
-      this._stream.pipe(destination, (err) => {
+      this._stream.pipe(destination._stream, (err) => {
         err ? reject(err) : resolve()
       })
     )
-  }
-
-  _releaseLock() {
-    this._reader = null
   }
 
   [Symbol.asyncIterator]() {
     return this._stream[Symbol.asyncIterator]()
   }
 
-  static from(iterable) {
-    return new ReadableStream(Readable.from(iterable))
+  _releaseLock() {
+    this._reader = null
   }
-}
 
-async function _open(starting, cb) {
-  try {
-    await starting
+  async _open(starting, cb) {
+    try {
+      await starting
 
-    cb(null)
-  } catch (err) {
-    cb(err)
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
   }
-}
 
-async function _read(pull, cb) {
-  try {
-    await pull()
+  async _read(pull, cb) {
+    try {
+      await pull()
 
-    cb(null)
-  } catch (err) {
-    cb(err)
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
   }
 }
 
@@ -378,15 +376,15 @@ class WritableStream {
       this._controller = new exports.WritableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = _open.bind(this, start.call(this, this._controller))
+        this._stream._open = this._open.bind(this, start.call(this, this._controller))
       }
 
       if (write) {
-        this._stream._write = _write.bind(this, write)
+        this._stream._write = this._write.bind(this, write)
       }
 
       if (close) {
-        this._stream._destroy = _destroy.bind(this, close.call(this))
+        this._stream._destroy = this._destroy.bind(this, close.call(this))
       }
 
       if (abort) {
@@ -432,31 +430,41 @@ class WritableStream {
   _releaseLock() {
     this._writer = null
   }
-}
 
-async function _write(fn, data, cb) {
-  try {
-    await fn(data, this._controller)
+  async _open(starting, cb) {
+    try {
+      await starting
 
-    cb(null)
-  } catch (err) {
-    cb(err)
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
   }
-}
 
-async function _destroy(closing, cb) {
-  try {
-    await closing
+  async _write(write, data, cb) {
+    try {
+      await write(data, this._controller)
 
-    cb(null)
-  } catch (err) {
-    cb(err)
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
+  async _destroy(closing, cb) {
+    try {
+      await closing
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
   }
 }
 
 exports.WritableStream = WritableStream
 
-const isWritableStream = function isWritableStream(value) {
+exports.isWritableStream = function isWritableStream(value) {
   if (value instanceof WritableStream) return true
 
   return (
@@ -465,7 +473,5 @@ const isWritableStream = function isWritableStream(value) {
     value[writableKind] === WritableStream[writableKind]
   )
 }
-
-exports.isWritableStream = isWritableStream
 
 function noop() {}
