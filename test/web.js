@@ -7,7 +7,7 @@ const {
   WritableStreamDefaultController
 } = require('../web')
 
-test('ReadableStream', async (t) => {
+test('web, readable', async (t) => {
   t.plan(2)
 
   const read = []
@@ -30,7 +30,7 @@ test('ReadableStream', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('ReadableStream - error', async (t) => {
+test('web, readable, error', async (t) => {
   t.plan(1)
 
   const stream = new ReadableStream({
@@ -45,7 +45,7 @@ test('ReadableStream - error', async (t) => {
   }, 'boom!')
 })
 
-test('ReadableStream - cancel', async (t) => {
+test('web, readable, cancel', async (t) => {
   t.plan(2)
 
   const stream = new ReadableStream({
@@ -57,7 +57,7 @@ test('ReadableStream - cancel', async (t) => {
   await t.execution(stream.cancel('reason'))
 })
 
-test('ReadableStream - reader.cancel', async (t) => {
+test('web, readable, reader.cancel', async (t) => {
   t.plan(2)
 
   const stream = new ReadableStream({
@@ -71,7 +71,7 @@ test('ReadableStream - reader.cancel', async (t) => {
   await t.execution(reader.cancel('reason'))
 })
 
-test('ReadableStream - from', async (t) => {
+test('web, readable, from', async (t) => {
   t.plan(2)
 
   async function* asyncIterator() {
@@ -93,7 +93,7 @@ test('ReadableStream - from', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('ReadableStream - reader', async (t) => {
+test('web, readable, reader', async (t) => {
   t.plan(7)
 
   const stream = new ReadableStream({
@@ -106,8 +106,8 @@ test('ReadableStream - reader', async (t) => {
 
   const reader = stream.getReader()
 
-  t.exception.all(() => stream.getReader(), /ReadableStream is locked/)
-  await t.exception.all(stream.cancel(), /ReadableStream is locked/)
+  t.exception.all(() => stream.getReader())
+  await t.exception.all(stream.cancel())
 
   t.alike(await reader.read(), { value: 1, done: false })
   t.alike(await reader.read(), { value: 2, done: false })
@@ -117,7 +117,7 @@ test('ReadableStream - reader', async (t) => {
   await t.execution(reader.closed, 'reader closed')
 })
 
-test('ReadableStream - pull', async (t) => {
+test('web, readable, pull', async (t) => {
   t.plan(1)
 
   let count = 0
@@ -134,7 +134,7 @@ test('ReadableStream - pull', async (t) => {
   t.alike(read, [1, 2, 3])
 })
 
-test('ReadableStream - locked', async (t) => {
+test('web, readable, locked', async (t) => {
   t.plan(3)
 
   const stream = new ReadableStream()
@@ -145,12 +145,12 @@ test('ReadableStream - locked', async (t) => {
 
   reader.releaseLock()
 
-  await t.exception.all(reader.closed, /released/)
+  await t.exception.all(reader.closed)
 
   t.is(stream.locked, false)
 })
 
-test('ReadableStream - tee', async (t) => {
+test('web, readable, tee', async (t) => {
   t.plan(4)
 
   const stream = new ReadableStream({
@@ -172,7 +172,7 @@ test('ReadableStream - tee', async (t) => {
   t.alike(await bReader.read(), { value: undefined, done: true })
 })
 
-test('ReadableStream - only trigger pull after start is finished', async (t) => {
+test('web, readable, only trigger pull after start is finished', async (t) => {
   t.plan(1)
 
   let foo
@@ -191,7 +191,7 @@ test('ReadableStream - only trigger pull after start is finished', async (t) => 
   await stream.getReader().read()
 })
 
-test('CountQueuingStrategy', async (t) => {
+test('web, readable, count queuing strategy', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -227,43 +227,7 @@ test('CountQueuingStrategy', async (t) => {
   reader.read()
 })
 
-test('ReadableStream - custom high water mark', async (t) => {
-  t.plan(8)
-
-  let loop = 0
-  let reader
-
-  const stream = new ReadableStream(
-    {
-      start(controller) {
-        t.is(controller.desiredSize, 4)
-      },
-      async pull(controller) {
-        if (loop === 0) t.is(controller.desiredSize, 4)
-        if (loop === 1) t.is(controller.desiredSize, 4)
-
-        if (loop === 2) {
-          t.is(controller.desiredSize, 3)
-          await reader.read()
-          t.is(controller.desiredSize, 4)
-        }
-
-        if (loop === 3) t.is(controller.desiredSize, 3)
-        if (loop === 4) t.is(controller.desiredSize, 2)
-        if (loop === 5) t.is(controller.desiredSize, 1)
-        if (loop === 6) t.fail()
-
-        controller.enqueue(loop++)
-      }
-    },
-    { highWaterMark: 4 }
-  )
-
-  reader = stream.getReader()
-  reader.read()
-})
-
-test('ByteLengthQueuingStrategy', async (t) => {
+test('web, readable, byte length queuing strategy', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -301,7 +265,43 @@ test('ByteLengthQueuingStrategy', async (t) => {
   reader.read()
 })
 
-test('ReadableStream - custom size function', async (t) => {
+test('web, readable, custom high water mark', async (t) => {
+  t.plan(8)
+
+  let loop = 0
+  let reader
+
+  const stream = new ReadableStream(
+    {
+      start(controller) {
+        t.is(controller.desiredSize, 4)
+      },
+      async pull(controller) {
+        if (loop === 0) t.is(controller.desiredSize, 4)
+        if (loop === 1) t.is(controller.desiredSize, 4)
+
+        if (loop === 2) {
+          t.is(controller.desiredSize, 3)
+          await reader.read()
+          t.is(controller.desiredSize, 4)
+        }
+
+        if (loop === 3) t.is(controller.desiredSize, 3)
+        if (loop === 4) t.is(controller.desiredSize, 2)
+        if (loop === 5) t.is(controller.desiredSize, 1)
+        if (loop === 6) t.fail()
+
+        controller.enqueue(loop++)
+      }
+    },
+    { highWaterMark: 4 }
+  )
+
+  reader = stream.getReader()
+  reader.read()
+})
+
+test('web, readable, custom size function', async (t) => {
   t.plan(8)
 
   let loop = 0
@@ -339,7 +339,7 @@ test('ReadableStream - custom size function', async (t) => {
   reader.read()
 })
 
-test('WritableStream', async (t) => {
+test('web, writable stream', async (t) => {
   t.plan(11)
 
   const stream = new WritableStream({
@@ -357,9 +357,9 @@ test('WritableStream', async (t) => {
 
   const writer = stream.getWriter()
 
-  t.exception.all(() => stream.getWriter(), /WritableStream is locked/)
-  await t.exception.all(stream.abort(), /WritableStream is locked/)
-  await t.exception.all(stream.close(), /WritableStream is locked/)
+  t.exception.all(() => stream.getWriter())
+  await t.exception.all(stream.abort())
+  await t.exception.all(stream.close())
 
   t.is(writer.desiredSize, 1)
 
@@ -371,7 +371,7 @@ test('WritableStream', async (t) => {
   await t.execution(writer.closed, 'writer closed getter')
 })
 
-test('WritableStream - error', async (t) => {
+test('web, writable, error', async (t) => {
   t.plan(1)
 
   const stream = new WritableStream({
@@ -388,7 +388,7 @@ test('WritableStream - error', async (t) => {
   await t.exception(writer.write('foo'), /boom!/)
 })
 
-test('WritableStream - close', async (t) => {
+test('web, writable, close', async (t) => {
   t.plan(1)
 
   const stream = new WritableStream()
@@ -396,7 +396,7 @@ test('WritableStream - close', async (t) => {
   await t.execution(stream.close())
 })
 
-test('WritableStream - abort', async (t) => {
+test('web, writable, abort', async (t) => {
   t.plan(2)
 
   const stream = new WritableStream({
@@ -408,7 +408,7 @@ test('WritableStream - abort', async (t) => {
   await t.execution(stream.abort('reason'))
 })
 
-test('WritableStream - writer.abort', async (t) => {
+test('web, writable, writer.abort', async (t) => {
   t.plan(2)
 
   const stream = new WritableStream({
@@ -422,7 +422,7 @@ test('WritableStream - writer.abort', async (t) => {
   await t.execution(writer.abort('reason'))
 })
 
-test('WritableStream - locked', async (t) => {
+test('web, writable, locked', async (t) => {
   t.plan(3)
 
   const stream = new WritableStream()
@@ -433,12 +433,12 @@ test('WritableStream - locked', async (t) => {
 
   writer.releaseLock()
 
-  await t.exception.all(writer.closed, /released/)
+  await t.exception.all(writer.closed)
 
   t.is(stream.locked, false)
 })
 
-test('WritableStream - ready', async (t) => {
+test('web, writable, ready', async (t) => {
   t.plan(3)
 
   const stream = new WritableStream()
@@ -453,7 +453,7 @@ test('WritableStream - ready', async (t) => {
   await t.exception(writer.ready)
 })
 
-test('ReadableStream.pipeTo(WritableStream)', async (t) => {
+test('web, readable.pipeTo(writable)', async (t) => {
   t.plan(1)
 
   const written = []

@@ -7,22 +7,23 @@ const writableKind = Symbol.for('bare.stream.writable.kind')
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   constructor(stream) {
-    this.stream = stream
+    this._stream = stream
+    this._stream._stream.once('close', onclose).once('error', onerror)
 
-    this._closed = Promise.withResolvers()
+    const closed = Promise.withResolvers()
 
-    this.stream._stream.once('close', onclose.bind(this)).once('error', onerror.bind(this))
+    // Avoid unhandled exceptions
+    closed.promise.catch(noop)
+
+    this._closed = closed
 
     function onclose() {
-      this._closed.resolve()
+      closed.resolve()
     }
 
     function onerror(err) {
-      this._closed.reject(err)
+      closed.reject(err)
     }
-
-    // Avoid unhandled exceptions
-    this._closed.promise.catch(noop)
   }
 
   get closed() {
@@ -30,7 +31,7 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   read() {
-    const stream = this.stream._stream
+    const stream = this._stream._stream
 
     return new Promise((resolve, reject) => {
       const err = getStreamError(stream)
@@ -73,13 +74,13 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   releaseLock() {
-    this._closed.reject('Reader was released')
-    this.stream._releaseLock()
-    this.stream = null
+    this._closed.reject(new TypeError('Reader was released'))
+    this._stream._releaseLock()
+    this._stream = null
   }
 
-  cancel(reason = 'ReadableStream was cancelled') {
-    const stream = this.stream._stream
+  cancel(reason = new TypeError('Stream was cancelled')) {
+    const stream = this._stream._stream
 
     if (stream.destroyed) return Promise.resolve()
 
@@ -90,23 +91,25 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
 // https://streams.spec.whatwg.org/#readablestreamdefaultcontroller
 exports.ReadableStreamDefaultController = class ReadableStreamDefaultController {
   constructor(stream) {
-    this._stream = stream._stream
+    this._stream = stream
   }
 
   get desiredSize() {
-    return this._stream._readableState.highWaterMark - this._stream._readableState.buffered
+    const stream = this._stream._stream
+
+    return stream._readableState.highWaterMark - stream._readableState.buffered
   }
 
   enqueue(data) {
-    this._stream.push(data)
+    this._stream._stream.push(data)
   }
 
   close() {
-    this._stream.push(null)
+    this._stream._stream.push(null)
   }
 
   error(err) {
-    this._stream.destroy(err)
+    this._stream._stream.destroy(err)
   }
 }
 
@@ -132,11 +135,11 @@ class ReadableStream {
       const controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = open.bind(this, start.call(this, controller))
+        this._stream._open = _open.bind(this, start.call(this, controller))
       }
 
       if (pull) {
-        this._stream._read = read.bind(this, pull.bind(this, controller))
+        this._stream._read = _read.bind(this, pull.bind(this, controller))
       }
 
       if (cancel) {
@@ -156,17 +159,17 @@ class ReadableStream {
   }
 
   getReader() {
-    if (this.locked) throw new TypeError('ReadableStream is locked')
+    if (this.locked) throw new TypeError('Stream is locked')
 
     this._reader = new exports.ReadableStreamDefaultReader(this)
 
     return this._reader
   }
 
-  cancel(reason = 'ReadableStream was cancelled') {
+  cancel(reason = new TypeError('Stream was cancelled')) {
     if (this._stream.destroyed) return Promise.resolve()
 
-    if (this.locked) return Promise.reject(new TypeError('ReadableStream is locked'))
+    if (this.locked) return Promise.reject(new TypeError('Stream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
@@ -200,7 +203,7 @@ class ReadableStream {
   }
 }
 
-async function open(starting, cb) {
+async function _open(starting, cb) {
   try {
     await starting
 
@@ -210,7 +213,7 @@ async function open(starting, cb) {
   }
 }
 
-async function read(pull, cb) {
+async function _read(pull, cb) {
   try {
     await pull()
 
@@ -270,26 +273,27 @@ exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
 // https://streams.spec.whatwg.org/#writablestreamdefaultwriter
 exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   constructor(stream) {
-    this.stream = stream
+    this._stream = stream
+    this._stream._stream.once('close', onclose).once('error', onerror)
 
-    this._closed = Promise.withResolvers()
+    const closed = Promise.withResolvers()
 
-    this.stream._stream.once('close', onclose.bind(this)).once('error', onerror.bind(this))
+    // Avoid unhandled exceptions
+    closed.promise.catch(noop)
+
+    this._closed = closed
 
     function onclose() {
-      this._closed.resolve()
+      closed.resolve()
     }
 
     function onerror(err) {
-      this._closed.reject(err)
+      closed.reject(err)
     }
-
-    // Avoid unhandled exceptions
-    this._closed.promise.catch(noop)
   }
 
   get desiredSize() {
-    const stream = this.stream._stream
+    const stream = this._stream._stream
 
     return stream._writableState.highWaterMark - stream._writableState.buffered
   }
@@ -299,7 +303,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   get ready() {
-    const stream = this.stream._stream
+    const stream = this._stream._stream
 
     if (getStreamError(stream)) return Promise.reject()
 
@@ -307,7 +311,7 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   async write(chunk) {
-    const stream = this.stream._stream
+    const stream = this._stream._stream
 
     const err = getStreamError(stream)
 
@@ -319,21 +323,21 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   }
 
   releaseLock() {
-    this._closed.reject('Writer was released')
-    this.stream._releaseLock()
-    this.stream = null
+    this._closed.reject(new TypeError('Writer was released'))
+    this._stream._releaseLock()
+    this._stream = null
   }
 
   close() {
-    const stream = this.stream._stream
+    const stream = this._stream._stream
 
     if (stream.destroyed) return Promise.resolve()
 
     return new Promise((resolve) => stream.once('close', resolve).end())
   }
 
-  abort(reason = 'WritableStream was aborted') {
-    const stream = this.stream._stream
+  abort(reason = new TypeError('Stream was aborted')) {
+    const stream = this._stream._stream
 
     if (stream.destroyed) return Promise.resolve()
 
@@ -344,11 +348,11 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
 // https://streams.spec.whatwg.org/#writablestreamdefaultcontroller
 exports.WritableStreamDefaultController = class WritableStreamDefaultController {
   constructor(stream) {
-    this._stream = stream._stream
+    this._stream = stream
   }
 
   error(err) {
-    this._stream.destroy(err)
+    this._stream._stream.destroy(err)
   }
 }
 
@@ -374,7 +378,7 @@ class WritableStream {
       this._controller = new exports.WritableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = open.bind(this, start.call(this, this._controller))
+        this._stream._open = _open.bind(this, start.call(this, this._controller))
       }
 
       if (write) {
@@ -382,7 +386,7 @@ class WritableStream {
       }
 
       if (close) {
-        this._stream._destroy = destroy.bind(this, close.call(this))
+        this._stream._destroy = _destroy.bind(this, close.call(this))
       }
 
       if (abort) {
@@ -402,17 +406,17 @@ class WritableStream {
   }
 
   getWriter() {
-    if (this.locked) throw new TypeError('WritableStream is locked')
+    if (this.locked) throw new TypeError('Stream is locked')
 
     this._writer = new exports.WritableStreamDefaultWriter(this)
 
     return this._writer
   }
 
-  abort(reason = 'WritableStream was aborted') {
+  abort(reason = new TypeError('Stream was aborted')) {
     if (this._stream.destroyed) return Promise.resolve()
 
-    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
+    if (this.locked) return Promise.reject(new TypeError('Stream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
   }
@@ -420,7 +424,7 @@ class WritableStream {
   close() {
     if (this._stream.destroyed) return Promise.resolve()
 
-    if (this.locked) return Promise.reject(new TypeError('WritableStream is locked'))
+    if (this.locked) return Promise.reject(new TypeError('Stream is locked'))
 
     return new Promise((resolve) => this._stream.once('close', resolve).end())
   }
@@ -440,7 +444,7 @@ async function _write(fn, data, cb) {
   }
 }
 
-async function destroy(closing, cb) {
+async function _destroy(closing, cb) {
   try {
     await closing
 
