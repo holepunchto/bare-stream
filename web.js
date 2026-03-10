@@ -84,7 +84,9 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
 
     if (stream.destroyed) return Promise.resolve()
 
-    return new Promise((resolve) => stream.once('close', resolve).destroy(reason))
+    return new Promise((resolve) =>
+      stream.once('close', resolve).once('error', noop).destroy(reason)
+    )
   }
 }
 
@@ -171,11 +173,15 @@ class ReadableStream {
   }
 
   cancel(reason = new TypeError('Stream was cancelled')) {
-    if (this._stream.destroyed) return Promise.resolve()
+    const stream = this._stream
+
+    if (stream.destroyed) return Promise.resolve()
 
     if (this.locked) return Promise.reject(new TypeError('Stream is locked'))
 
-    return new Promise((resolve) => this._stream.once('close', resolve).destroy(reason))
+    return new Promise((resolve) =>
+      stream.once('close', resolve).once('error', noop).destroy(reason)
+    )
   }
 
   tee() {
