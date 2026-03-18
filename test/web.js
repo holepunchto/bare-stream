@@ -3,6 +3,7 @@ const {
   ReadableStream,
   CountQueuingStrategy,
   ByteLengthQueuingStrategy,
+  isReadableStreamErrored,
   WritableStream,
   WritableStreamDefaultController
 } = require('../web')
@@ -337,6 +338,18 @@ test('web, readable, custom size function', async (t) => {
 
   reader = stream.getReader()
   reader.read()
+})
+
+test('web, isReadableStreamErrored', async (t) => {
+  t.plan(2)
+
+  const stream = new ReadableStream()
+
+  t.is(isReadableStreamErrored(stream), false)
+
+  await stream.cancel()
+
+  t.is(isReadableStreamErrored(stream), true)
 })
 
 test('web, writable stream', async (t) => {
