@@ -585,3 +585,17 @@ test('finished, error handling', (t) => {
 
   stream.destroy(new Error('boom'))
 })
+
+test('isErrored', (t) => {
+  t.plan(2)
+
+  const stream = new Readable().once('error', noop)
+
+  t.is(isErrored(stream), false)
+
+  stream.destroy(new Error('boom'))
+
+  t.is(isErrored(stream), true)
+})
+
+function noop() {}

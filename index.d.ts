@@ -182,6 +182,8 @@ declare namespace Stream {
 
   export function isDisturbed(stream: Stream): boolean
 
+  export function isErrored(stream: Stream): boolean
+
   export function getStreamError(stream: Stream, opts?: { all?: boolean }): Error | null
 }
 

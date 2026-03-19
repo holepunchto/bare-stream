@@ -13,6 +13,10 @@ exports.isFinishing = stream.isFinishing
 exports.isFinished = stream.isFinished
 exports.isDisturbed = stream.isDisturbed
 
+exports.isErrored = function isErrored(stream) {
+  return exports.getStreamError(stream) !== null
+}
+
 exports.getStreamError = stream.getStreamError
 
 exports.Stream = exports
