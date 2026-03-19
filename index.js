@@ -221,6 +221,43 @@ exports.Duplex = class Duplex extends stream.Duplex {
   }
 }
 
+const DuplexSide = class DuplexSide extends exports.Duplex {
+  constructor(opts) {
+    super(opts)
+
+    this._otherSide = null
+    this._cb = null
+  }
+
+  _read() {
+    const cb = this._cb
+    if (!cb) return
+
+    this._cb = null
+    cb()
+  }
+
+  _write(chunk, encoding, cb) {
+    this._otherSide.push(chunk, encoding)
+    this._otherSide._cb = cb
+  }
+
+  _final(cb) {
+    this._otherSide.on('end', cb)
+    this._otherSide.push(null)
+  }
+}
+
+exports.duplexPair = function duplexPair(opts) {
+  const sideA = new DuplexSide(opts)
+  const sideB = new DuplexSide(opts)
+
+  sideA._otherSide = sideB
+  sideB._otherSide = sideA
+
+  return [sideA, sideB]
+}
+
 exports.Transform = class Transform extends stream.Transform {
   constructor(opts = {}) {
     super({

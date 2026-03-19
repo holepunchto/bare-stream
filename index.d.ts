@@ -166,6 +166,8 @@ declare namespace Stream {
 
   export function pipeline<S extends Writable>(...args: [...Pipeline<S>, cb: StreamCallback]): S
 
+  export function duplexPair(opts?: DuplexOptions): [Duplex, Duplex]
+
   export function finished(
     stream: Stream,
     opts: { cleanup?: boolean },

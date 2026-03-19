@@ -9,7 +9,8 @@ const {
   finished,
   isErrored,
   isReadable,
-  isWritable
+  isWritable,
+  duplexPair
 } = require('..')
 
 test('default export', (t) => {
@@ -669,6 +670,24 @@ test('isReadable, isWritable, duplex', (t) => {
     })
 
   stream.end('hello')
+})
+
+test('duplexPair', (t) => {
+  t.plan(5)
+
+  const [pairA, pairB] = duplexPair()
+
+  t.ok(pairA instanceof Duplex)
+  t.ok(pairB instanceof Duplex)
+
+  pairA.on('data', (data) => t.alike(data, Buffer.from('Hello from PairB')))
+  pairB.on('data', (data) => t.alike(data, Buffer.from('Hello from PairA')))
+
+  pairA.write('Hello from PairA')
+  pairB.write('Hello from PairB')
+
+  pairB.on('end', () => t.pass('pairB ended'))
+  pairA.end()
 })
 
 function noop() {}
