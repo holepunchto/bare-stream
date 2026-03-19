@@ -1,5 +1,16 @@
 const test = require('brittle')
-const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('..')
+const {
+  Stream,
+  Readable,
+  Writable,
+  Duplex,
+  Transform,
+  PassThrough,
+  finished,
+  isErrored,
+  isReadable,
+  isWritable
+} = require('..')
 
 test('default export', (t) => {
   t.is(require('..'), Stream)
@@ -596,6 +607,68 @@ test('isErrored', (t) => {
   stream.destroy(new Error('boom'))
 
   t.is(isErrored(stream), true)
+})
+
+test('isReadable', (t) => {
+  t.plan(3)
+
+  const stream = new Readable({
+    read(size) {
+      this.push('hello')
+      this.push(null)
+    }
+  })
+
+  stream
+    .on('data', () => t.is(isReadable(stream), true))
+    .on('end', () => t.is(isReadable(stream), false))
+    .on('close', () => t.is(isReadable(stream), false))
+})
+
+test('isWritable', (t) => {
+  t.plan(3)
+
+  const stream = new Writable({
+    write(data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  t.is(isWritable(stream), true)
+
+  stream
+    .on('finish', () => t.is(isWritable(stream), false))
+    .on('close', () => t.is(isWritable(stream), false))
+
+  stream.end('hello')
+})
+
+test('isReadable, isWritable, duplex', (t) => {
+  t.plan(6)
+
+  const stream = new Duplex({
+    read(size) {
+      this.push('hello')
+      this.push(null)
+    },
+
+    write(data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  t.is(isWritable(stream), true)
+
+  stream
+    .on('data', () => t.is(isReadable(stream), true))
+    .on('end', () => t.is(isReadable(stream), false))
+    .on('finish', () => t.is(isWritable(stream), false))
+    .on('close', () => {
+      t.is(isReadable(stream), false)
+      t.is(isWritable(stream), false)
+    })
+
+  stream.end('hello')
 })
 
 function noop() {}

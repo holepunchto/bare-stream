@@ -184,6 +184,10 @@ declare namespace Stream {
 
   export function isErrored(stream: Stream): boolean
 
+  export function isReadable(stream: Stream): boolean
+
+  export function isWritable(stream: Stream): boolean
+
   export function getStreamError(stream: Stream, opts?: { all?: boolean }): Error | null
 }
 

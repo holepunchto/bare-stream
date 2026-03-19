@@ -17,6 +17,14 @@ exports.isErrored = function isErrored(stream) {
   return exports.getStreamError(stream) !== null
 }
 
+exports.isReadable = function isReadable(stream) {
+  return stream.readable && !exports.isEnded(stream)
+}
+
+exports.isWritable = function isWritable(stream) {
+  return stream.writable && !exports.isFinished(stream)
+}
+
 exports.getStreamError = stream.getStreamError
 
 exports.Stream = exports
