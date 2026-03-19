@@ -7,7 +7,9 @@ module.exports = exports = stream.Stream
 exports.pipeline = stream.pipeline
 
 exports.isStream = stream.isStream
+exports.isEnding = stream.isEnding
 exports.isEnded = stream.isEnded
+exports.isFinishing = stream.isFinishing
 exports.isFinished = stream.isFinished
 exports.isDisturbed = stream.isDisturbed
 
