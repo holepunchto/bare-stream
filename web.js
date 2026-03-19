@@ -269,6 +269,11 @@ exports.isReadableStream = function isReadableStream(value) {
   )
 }
 
+// https://streams.spec.whatwg.org/#readablestream-errored
+exports.isReadableStreamErrored = function isReadableStreamErrored(stream) {
+  return getStreamError(stream._stream) !== null
+}
+
 // https://streams.spec.whatwg.org/#is-readable-stream-disturbed
 exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
   return isDisturbed(stream._stream)

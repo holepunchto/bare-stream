@@ -70,6 +70,8 @@ export class ByteLengthQueuingStrategy extends QueuingStrategy {}
 
 export function isReadableStream(value: unknown): value is ReadableStream
 
+export function isReadableStreamErrored(stream: ReadableStream): boolean
+
 export function isReadableStreamDisturbed(stream: ReadableStream): boolean
 
 export interface WritableStreamDefaultWriter {
