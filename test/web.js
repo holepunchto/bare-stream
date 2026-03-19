@@ -3,6 +3,7 @@ const {
   ReadableStream,
   CountQueuingStrategy,
   ByteLengthQueuingStrategy,
+  isReadableStreamDisturbed,
   isReadableStreamErrored,
   WritableStream,
   WritableStreamDefaultController
@@ -338,6 +339,48 @@ test('web, readable, custom size function', async (t) => {
 
   reader = stream.getReader()
   reader.read()
+})
+
+test('web, isReadableStreamDistured', async (t) => {
+  t.plan(3)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(1)
+      controller.enqueue(2)
+      controller.close()
+    }
+  })
+
+  t.is(isReadableStreamDisturbed(stream), false)
+
+  const reader = stream.getReader()
+
+  t.is(isReadableStreamDisturbed(stream), false)
+
+  await reader.read()
+
+  t.is(isReadableStreamDisturbed(stream), true)
+
+  reader.cancel()
+})
+
+test('web, isReadableStreamDistured, cancel', async (t) => {
+  t.plan(2)
+
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(1)
+      controller.enqueue(2)
+      controller.close()
+    }
+  })
+
+  t.is(isReadableStreamDisturbed(stream), false)
+
+  await stream.cancel()
+
+  t.is(isReadableStreamDisturbed(stream), true)
 })
 
 test('web, isReadableStreamErrored', async (t) => {
