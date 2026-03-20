@@ -611,12 +611,15 @@ test('isErrored', (t) => {
 })
 
 test('isReadable', (t) => {
-  t.plan(4)
+  t.plan(6)
 
   const stream = new Readable({
     read(size) {
       this.push('hello')
+      t.is(isReadable(stream), true)
+
       this.push(null)
+      t.is(isReadable(stream), true)
     }
   })
 
