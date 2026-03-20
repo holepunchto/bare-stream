@@ -1,5 +1,17 @@
 const test = require('brittle')
-const { Stream, Readable, Writable, Duplex, Transform, PassThrough, finished } = require('..')
+const {
+  Stream,
+  Readable,
+  Writable,
+  Duplex,
+  Transform,
+  PassThrough,
+  finished,
+  isErrored,
+  isReadable,
+  isWritable,
+  duplexPair
+} = require('..')
 
 test('default export', (t) => {
   t.is(require('..'), Stream)
@@ -585,3 +597,127 @@ test('finished, error handling', (t) => {
 
   stream.destroy(new Error('boom'))
 })
+
+test('isErrored', (t) => {
+  t.plan(2)
+
+  const stream = new Readable().once('error', noop)
+
+  t.is(isErrored(stream), false)
+
+  stream.destroy(new Error('boom'))
+
+  t.is(isErrored(stream), true)
+})
+
+test('isReadable', (t) => {
+  t.plan(6)
+
+  const stream = new Readable({
+    read(size) {
+      this.push('hello')
+      t.is(isReadable(stream), true)
+
+      this.push(null)
+      t.is(isReadable(stream), true)
+    }
+  })
+
+  t.is(isReadable(stream), true)
+
+  stream
+    .on('data', () => t.is(isReadable(stream), true))
+    .on('end', () => t.is(isReadable(stream), false))
+    .on('close', () => t.is(isReadable(stream), false))
+})
+
+test('isReadable, immediate destroy', (t) => {
+  const stream = new Readable({
+    read(size) {
+      t.fail()
+    }
+  })
+
+  stream.destroy()
+
+  t.is(isReadable(stream), false)
+})
+
+test('isWritable', (t) => {
+  t.plan(4)
+
+  const stream = new Writable({
+    write(data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  t.is(isWritable(stream), true)
+
+  stream
+    .on('finish', () => t.is(isWritable(stream), false))
+    .on('close', () => t.is(isWritable(stream), false))
+    .end('hello')
+
+  t.is(isWritable(stream), false)
+})
+
+test('isWritable, immediate destroy', (t) => {
+  const stream = new Writable({
+    write(data, encoding, cb) {
+      t.fail()
+    }
+  })
+
+  stream.destroy()
+
+  t.is(isWritable(stream), false)
+})
+
+test('isReadable, isWritable, duplex', (t) => {
+  t.plan(6)
+
+  const stream = new Duplex({
+    read(size) {
+      this.push('hello')
+      this.push(null)
+    },
+
+    write(data, encoding, cb) {
+      cb(null)
+    }
+  })
+
+  t.is(isWritable(stream), true)
+
+  stream
+    .on('data', () => t.is(isReadable(stream), true))
+    .on('end', () => t.is(isReadable(stream), false))
+    .on('finish', () => t.is(isWritable(stream), false))
+    .on('close', () => {
+      t.is(isReadable(stream), false)
+      t.is(isWritable(stream), false)
+    })
+
+  stream.end('hello')
+})
+
+test('duplexPair', (t) => {
+  t.plan(5)
+
+  const [pairA, pairB] = duplexPair()
+
+  t.ok(pairA instanceof Duplex)
+  t.ok(pairB instanceof Duplex)
+
+  pairA.on('data', (data) => t.alike(data, Buffer.from('Hello from PairB')))
+  pairB.on('data', (data) => t.alike(data, Buffer.from('Hello from PairA')))
+
+  pairA.write('Hello from PairA')
+  pairB.write('Hello from PairB')
+
+  pairB.on('end', () => t.pass('pairB ended'))
+  pairA.end()
+})
+
+function noop() {}

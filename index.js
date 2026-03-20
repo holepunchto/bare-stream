@@ -13,6 +13,18 @@ exports.isFinishing = stream.isFinishing
 exports.isFinished = stream.isFinished
 exports.isDisturbed = stream.isDisturbed
 
+exports.isErrored = function isErrored(stream) {
+  return exports.getStreamError(stream) !== null
+}
+
+exports.isReadable = function isReadable(stream) {
+  return stream.readable && !stream.destroying && !exports.isEnded(stream)
+}
+
+exports.isWritable = function isWritable(stream) {
+  return stream.writable && !stream.destroying && !exports.isFinishing(stream)
+}
+
 exports.getStreamError = stream.getStreamError
 
 exports.Stream = exports
@@ -207,6 +219,43 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     return result
   }
+}
+
+class DuplexSide extends exports.Duplex {
+  constructor(opts) {
+    super(opts)
+
+    this._otherSide = null
+    this._cb = null
+  }
+
+  _read() {
+    const cb = this._cb
+    if (!cb) return
+
+    this._cb = null
+    cb()
+  }
+
+  _write(chunk, encoding, cb) {
+    this._otherSide.push(chunk, encoding)
+    this._otherSide._cb = cb
+  }
+
+  _final(cb) {
+    this._otherSide.on('end', cb)
+    this._otherSide.push(null)
+  }
+}
+
+exports.duplexPair = function duplexPair(opts) {
+  const sideA = new DuplexSide(opts)
+  const sideB = new DuplexSide(opts)
+
+  sideA._otherSide = sideB
+  sideB._otherSide = sideA
+
+  return [sideA, sideB]
 }
 
 exports.Transform = class Transform extends stream.Transform {
