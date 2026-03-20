@@ -221,7 +221,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
   }
 }
 
-const DuplexSide = class DuplexSide extends exports.Duplex {
+class DuplexSide extends exports.Duplex {
   constructor(opts) {
     super(opts)
 
