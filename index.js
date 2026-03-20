@@ -22,7 +22,12 @@ exports.isReadable = function isReadable(stream) {
 }
 
 exports.isWritable = function isWritable(stream) {
-  return stream.writable && !stream.destroying && !exports.isFinished(stream)
+  return (
+    stream.writable &&
+    !stream.destroying &&
+    !exports.isFinishing(stream) &&
+    !exports.isFinished(stream)
+  )
 }
 
 exports.getStreamError = stream.getStreamError
