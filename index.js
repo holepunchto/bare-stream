@@ -18,11 +18,11 @@ exports.isErrored = function isErrored(stream) {
 }
 
 exports.isReadable = function isReadable(stream) {
-  return stream.readable && !exports.isEnded(stream)
+  return stream.readable && !stream.destroying && !exports.isEnded(stream)
 }
 
 exports.isWritable = function isWritable(stream) {
-  return stream.writable && !exports.isFinished(stream)
+  return stream.writable && !stream.destroying && !exports.isFinished(stream)
 }
 
 exports.getStreamError = stream.getStreamError
