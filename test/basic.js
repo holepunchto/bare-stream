@@ -611,7 +611,7 @@ test('isErrored', (t) => {
 })
 
 test('isReadable', (t) => {
-  t.plan(3)
+  t.plan(4)
 
   const stream = new Readable({
     read(size) {
@@ -620,10 +620,24 @@ test('isReadable', (t) => {
     }
   })
 
+  t.is(isReadable(stream), true)
+
   stream
     .on('data', () => t.is(isReadable(stream), true))
     .on('end', () => t.is(isReadable(stream), false))
     .on('close', () => t.is(isReadable(stream), false))
+})
+
+test('isReadable, immediate destroy', (t) => {
+  const stream = new Readable({
+    read(size) {
+      t.fail()
+    }
+  })
+
+  stream.destroy()
+
+  t.is(isReadable(stream), false)
 })
 
 test('isWritable', (t) => {
@@ -640,8 +654,19 @@ test('isWritable', (t) => {
   stream
     .on('finish', () => t.is(isWritable(stream), false))
     .on('close', () => t.is(isWritable(stream), false))
+    .end('hello')
+})
 
-  stream.end('hello')
+test('isWritable, immediate destroy', (t) => {
+  const stream = new Writable({
+    write(data, encoding, cb) {
+      t.fail()
+    }
+  })
+
+  stream.destroy()
+
+  t.is(isWritable(stream), false)
 })
 
 test('isReadable, isWritable, duplex', (t) => {
