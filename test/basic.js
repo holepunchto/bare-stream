@@ -641,7 +641,7 @@ test('isReadable, immediate destroy', (t) => {
 })
 
 test('isWritable', (t) => {
-  t.plan(3)
+  t.plan(4)
 
   const stream = new Writable({
     write(data, encoding, cb) {
@@ -655,6 +655,8 @@ test('isWritable', (t) => {
     .on('finish', () => t.is(isWritable(stream), false))
     .on('close', () => t.is(isWritable(stream), false))
     .end('hello')
+
+  t.is(isWritable(stream), false)
 })
 
 test('isWritable, immediate destroy', (t) => {
