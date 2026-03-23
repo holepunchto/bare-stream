@@ -720,4 +720,19 @@ test('duplexPair', (t) => {
   pairA.end()
 })
 
+test('async disposable', async (t) => {
+  t.plan(2)
+
+  const readable = new Readable()
+  const writable = new Writable()
+
+  {
+    await using disposableReadable = readable
+    await using disposableWritable = writable
+  }
+
+  t.ok(readable.destroyed)
+  t.ok(writable.destroyed)
+})
+
 function noop() {}
