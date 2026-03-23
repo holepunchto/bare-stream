@@ -1,5 +1,6 @@
 import EventEmitter, { EventMap } from 'bare-events'
 import Buffer, { BufferEncoding } from 'bare-buffer'
+import { AbortSignal } from 'bare-abort-controller'
 
 type StreamEncoding = BufferEncoding | 'buffer'
 
@@ -191,6 +192,8 @@ declare namespace Stream {
   export function isWritable(stream: Stream): boolean
 
   export function getStreamError(stream: Stream, opts?: { all?: boolean }): Error | null
+
+  export function addAbortSignal<S extends Stream>(signal: AbortSignal, stream: S): S
 }
 
 export = Stream

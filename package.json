@@ -37,6 +37,7 @@
   },
   "homepage": "https://github.com/holepunchto/bare-stream#readme",
   "dependencies": {
+    "bare-abort-controller": "^1.1.0",
     "streamx": "^2.25.0",
     "teex": "^1.0.1"
   },

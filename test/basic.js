@@ -1,4 +1,6 @@
 const test = require('brittle')
+const AbortController = require('bare-abort-controller')
+
 const {
   Stream,
   Readable,
@@ -10,7 +12,8 @@ const {
   isErrored,
   isReadable,
   isWritable,
-  duplexPair
+  duplexPair,
+  addAbortSignal
 } = require('..')
 
 test('default export', (t) => {
@@ -733,6 +736,18 @@ test('async disposable', async (t) => {
 
   t.ok(readable.destroyed)
   t.ok(writable.destroyed)
+})
+
+test('addSignalAbort', (t) => {
+  t.plan(1)
+
+  const controller = new AbortController()
+
+  const stream = addAbortSignal(controller.signal, new Readable())
+
+  finished(stream, (err) => t.is(err.message, 'The operation was aborted'))
+
+  controller.abort()
 })
 
 function noop() {}
