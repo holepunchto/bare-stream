@@ -37,7 +37,6 @@
   },
   "homepage": "https://github.com/holepunchto/bare-stream#readme",
   "dependencies": {
-    "bare-abort-controller": "^1.1.0",
     "streamx": "^2.25.0",
     "teex": "^1.0.1"
   },
@@ -49,10 +48,14 @@
     "prettier-config-holepunch": "^2.0.0"
   },
   "peerDependencies": {
+    "bare-abort-controller": "*",
     "bare-buffer": "*",
     "bare-events": "*"
   },
   "peerDependenciesMeta": {
+    "bare-abort-controller": {
+      "optional": true
+    },
     "bare-buffer": {
       "optional": true
     },
