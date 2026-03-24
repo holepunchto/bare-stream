@@ -61,6 +61,14 @@ exports.Readable = class Readable extends stream.Readable {
     }
   }
 
+  get closed() {
+    return !exports.isReadable(this)
+  }
+
+  get errored() {
+    return stream.getStreamError(this)
+  }
+
   push(chunk, encoding) {
     if (typeof chunk === 'string') {
       chunk = Buffer.from(chunk, encoding || defaultEncoding)
@@ -103,6 +111,14 @@ exports.Writable = class Writable extends stream.Writable {
     if (this._destroy !== stream.Stream.prototype._destroy) {
       this._destroy = destroy.bind(this, this._destroy)
     }
+  }
+
+  get closed() {
+    return !exports.isWritable(this)
+  }
+
+  get errored() {
+    return stream.getStreamError(this)
   }
 
   write(chunk, encoding, cb) {

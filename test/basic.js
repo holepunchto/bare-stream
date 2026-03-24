@@ -705,6 +705,34 @@ test('isReadable, isWritable, duplex', (t) => {
   stream.end('hello')
 })
 
+test('closed + errored getters', (t) => {
+  t.plan(8)
+
+  {
+    const stream = new Readable().once('error', noop)
+
+    t.is(stream.errored, null)
+    t.is(stream.closed, false)
+
+    stream.destroy(new Error('boom'))
+
+    t.is(stream.errored.message, 'boom')
+    t.is(stream.closed, true)
+  }
+
+  {
+    const stream = new Writable().once('error', noop)
+
+    t.is(stream.errored, null)
+    t.is(stream.closed, false)
+
+    stream.destroy(new Error('boom'))
+
+    t.is(stream.errored.message, 'boom')
+    t.is(stream.closed, true)
+  }
+})
+
 test('duplexPair', (t) => {
   t.plan(5)
 
