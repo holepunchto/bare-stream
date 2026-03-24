@@ -27,6 +27,17 @@ exports.isWritable = function isWritable(stream) {
 
 exports.getStreamError = stream.getStreamError
 
+exports.addAbortSignal = function addAbortSignal(signal, stream) {
+  function onAbort() {
+    stream.destroy(signal.reason)
+  }
+
+  if (signal.aborted) onAbort()
+  else signal.addEventListener('abort', onAbort)
+
+  return stream
+}
+
 exports.Stream = exports
 
 exports.Readable = class Readable extends stream.Readable {

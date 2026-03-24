@@ -41,6 +41,7 @@
     "teex": "^1.0.1"
   },
   "devDependencies": {
+    "bare-abort-controller": "^1.1.0",
     "bare-buffer": "^3.0.0",
     "bare-events": "^2.5.4",
     "brittle": "^3.5.2",
@@ -48,10 +49,14 @@
     "prettier-config-holepunch": "^2.0.0"
   },
   "peerDependencies": {
+    "bare-abort-controller": "*",
     "bare-buffer": "*",
     "bare-events": "*"
   },
   "peerDependenciesMeta": {
+    "bare-abort-controller": {
+      "optional": true
+    },
     "bare-buffer": {
       "optional": true
     },
