@@ -738,7 +738,7 @@ test('async disposable', async (t) => {
   t.ok(writable.destroyed)
 })
 
-test('addSignalAbort', (t) => {
+test('addAbortSignal', (t) => {
   t.plan(1)
 
   const controller = new AbortController()
