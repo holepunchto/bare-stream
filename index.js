@@ -65,6 +65,12 @@ exports.Readable = class Readable extends stream.Readable {
 
     super.unshift(chunk)
   }
+
+  async [Symbol.asyncDispose]() {
+    if (!this.destroyed) this.destroy()
+
+    await new Promise((resolve) => exports.finished(this, resolve))
+  }
 }
 
 exports.Writable = class Writable extends stream.Writable {
@@ -130,6 +136,12 @@ exports.Writable = class Writable extends stream.Writable {
     if (cb) this.once('finish', () => cb(null))
 
     return result
+  }
+
+  async [Symbol.asyncDispose]() {
+    if (!this.destroyed) this.destroy()
+
+    await new Promise((resolve) => exports.finished(this, resolve))
   }
 }
 
