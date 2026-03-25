@@ -2,6 +2,8 @@ import EventEmitter, { EventMap } from 'bare-events'
 import Buffer, { BufferEncoding } from 'bare-buffer'
 import { AbortSignal } from 'bare-abort-controller'
 
+import { ReadableStream, WritableStream, CustomQueuingStrategy } from './web'
+
 type StreamEncoding = BufferEncoding | 'buffer'
 
 interface StreamCallback {
@@ -76,6 +78,10 @@ declare class Readable<M extends ReadableEvents = ReadableEvents> extends Stream
   static isBackpressured(rs: Readable): boolean
 
   static isPaused(rs: Readable): boolean
+
+  static fromWeb(readableStream: ReadableStream, opts?: ReadableOptions): Readable
+
+  static toWeb(readable: Readable, queuingStrategy?: CustomQueuingStrategy): ReadableStream
 }
 
 interface WritableEvents extends StreamEvents {
@@ -115,6 +121,10 @@ declare class Writable<M extends WritableEvents = WritableEvents> extends Stream
   static isBackpressured(ws: Writable): boolean
 
   static drained(ws: Writable): Promise<boolean>
+
+  static fromWeb(writableStream: WritableStream, opts?: WritableOptions): Writable
+
+  static toWeb(writable: Writable, queuingStrategy?: CustomQueuingStrategy): WritableStream
 }
 
 interface DuplexEvents extends ReadableEvents, WritableEvents {}

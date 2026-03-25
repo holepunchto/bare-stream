@@ -1,4 +1,5 @@
 const stream = require('streamx')
+const { ReadableStream, WritableStream } = require('./web')
 
 const defaultEncoding = 'utf8'
 
@@ -85,6 +86,35 @@ exports.Readable = class Readable extends stream.Readable {
     super.unshift(chunk)
   }
 
+  static fromWeb(readableStream, opts) {
+    const reader = readableStream.getReader()
+
+    const stream = new exports.Readable({
+      ...opts,
+
+      async read(size) {
+        try {
+          const { value, done } = await reader.read()
+
+          if (done) this.push(null)
+          else this.push(value)
+        } catch (err) {
+          this.destroy(err)
+        }
+      }
+    })
+
+    reader.closed.catch((err) => {
+      if (!stream.destroyed) stream.destroy(err)
+    })
+
+    return stream
+  }
+
+  static toWeb(readable, opts) {
+    return new ReadableStream(readable, opts)
+  }
+
   async [Symbol.asyncDispose]() {
     if (!this.destroyed) this.destroy()
 
@@ -163,6 +193,38 @@ exports.Writable = class Writable extends stream.Writable {
     if (cb) this.once('finish', () => cb(null))
 
     return result
+  }
+
+  static fromWeb(writableStream, opts) {
+    const writer = writableStream.getWriter()
+
+    const stream = new exports.Writable({
+      ...opts,
+
+      async write(data, cb) {
+        try {
+          await writer.write(data)
+
+          cb(null)
+        } catch (err) {
+          this.destroy(err)
+        }
+      }
+    })
+
+    writer.closed
+      .then(() => {
+        if (!exports.isFinishing(stream)) stream.end()
+      })
+      .catch((err) => {
+        if (!stream.destroyed) stream.destroy(err)
+      })
+
+    return stream
+  }
+
+  static toWeb(writable, opts) {
+    return new WritableStream(writable, opts)
   }
 
   async [Symbol.asyncDispose]() {
