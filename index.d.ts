@@ -53,6 +53,9 @@ interface Readable<M extends ReadableEvents = ReadableEvents>
   extends Stream<M>, AsyncIterable<unknown> {
   _read(size: number): void
 
+  readonly closed: boolean
+  readonly errored: Error | null
+
   push(data: unknown | null, encoding?: BufferEncoding): boolean
   unshift(data: unknown | null, encoding?: BufferEncoding): boolean
   read(): unknown | null
@@ -92,7 +95,8 @@ interface Writable<M extends WritableEvents = WritableEvents> extends Stream<M> 
   _writev(batch: { chunk: unknown; encoding: StreamEncoding }[], cb: StreamCallback): void
   _final(cb: StreamCallback): void
 
-  readonly destroyed: boolean
+  readonly closed: boolean
+  readonly errored: Error | null
 
   write(data: unknown, encoding?: BufferEncoding, cb?: StreamCallback): boolean
   write(data: unknown, cb?: StreamCallback): boolean
