@@ -295,25 +295,12 @@ exports.Duplex = class Duplex extends stream.Duplex {
       }
     })
 
-    readable.on('data', (data) => {
-      if (exports.isReadable(duplex)) duplex.push(data)
-    })
+    readable
+      .on('data', (data) => duplex.push(data))
+      .on('end', () => duplex.push(null))
+      .on('error', (err) => duplex.destroy(err))
 
-    readable.on('end', () => {
-      if (exports.isReadable(duplex)) duplex.push(null)
-    })
-
-    readable.on('error', (err) => {
-      if (!duplex.destroyed) duplex.destroy(err)
-    })
-
-    writable.on('finish', () => {
-      if (exports.isWritable(duplex)) duplex.end()
-    })
-
-    writable.on('error', (err) => {
-      if (!duplex.destroyed) duplex.destroy(err)
-    })
+    writable.on('finish', () => duplex.end()).on('error', (err) => duplex.destroy(err))
 
     return duplex
   }
