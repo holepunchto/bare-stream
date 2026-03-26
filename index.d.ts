@@ -2,6 +2,8 @@ import EventEmitter, { EventMap } from 'bare-events'
 import Buffer, { BufferEncoding } from 'bare-buffer'
 import { AbortSignal } from 'bare-abort-controller'
 
+import { ReadableStream, WritableStream, CustomQueuingStrategy } from './web'
+
 type StreamEncoding = BufferEncoding | 'buffer'
 
 interface StreamCallback {
@@ -49,6 +51,15 @@ interface ReadableOptions<S extends Readable = Readable> extends StreamOptions<S
   read?(this: S, size: number): void
 }
 
+interface ReadableFromWebOptions {
+  encoding?: BufferEncoding
+  signal?: AbortSignal
+}
+
+interface ReadableToWebOptions {
+  strategy?: CustomQueuingStrategy
+}
+
 interface Readable<M extends ReadableEvents = ReadableEvents>
   extends Stream<M>, AsyncIterable<unknown> {
   _read(size: number): void
@@ -76,6 +87,10 @@ declare class Readable<M extends ReadableEvents = ReadableEvents> extends Stream
   static isBackpressured(rs: Readable): boolean
 
   static isPaused(rs: Readable): boolean
+
+  static fromWeb(readableStream: ReadableStream, opts?: ReadableFromWebOptions): Readable
+
+  static toWeb(readable: Readable, opts?: ReadableToWebOptions): ReadableStream
 }
 
 interface WritableEvents extends StreamEvents {
@@ -88,6 +103,10 @@ interface WritableOptions<S extends Writable = Writable> extends StreamOptions<S
   write?(this: S, data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   writev?(this: S, batch: { chunk: unknown; encoding: StreamEncoding }[], cb: StreamCallback): void
   final?(this: S, cb: StreamCallback): void
+}
+
+interface WritableFromWebOptions {
+  signal?: AbortSignal
 }
 
 interface Writable<M extends WritableEvents = WritableEvents> extends Stream<M> {
@@ -115,16 +134,29 @@ declare class Writable<M extends WritableEvents = WritableEvents> extends Stream
   static isBackpressured(ws: Writable): boolean
 
   static drained(ws: Writable): Promise<boolean>
+
+  static fromWeb(writableStream: WritableStream, opts?: WritableFromWebOptions): Writable
+
+  static toWeb(writable: Writable): WritableStream
 }
 
 interface DuplexEvents extends ReadableEvents, WritableEvents {}
 
 interface DuplexOptions<S extends Duplex = Duplex> extends ReadableOptions<S>, WritableOptions<S> {}
 
+interface DuplexFromWebOptions extends ReadableFromWebOptions, WritableFromWebOptions {}
+
 interface Duplex<M extends DuplexEvents = DuplexEvents> extends Readable<M>, Writable<M> {}
 
 declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {
   constructor(opts?: DuplexOptions)
+
+  static fromWeb(
+    { readable: ReadableStream, writable: Writable },
+    opts?: DuplexFromWebOptions
+  ): Readable
+
+  static toWeb(readable: Readable, opts?: ReadableToWebOptions): ReadableStream
 }
 
 interface TransformEvents extends DuplexEvents {}

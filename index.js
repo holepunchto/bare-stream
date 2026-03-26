@@ -1,4 +1,5 @@
 const stream = require('streamx')
+const { ReadableStream, WritableStream } = require('./web')
 
 const defaultEncoding = 'utf8'
 
@@ -85,6 +86,19 @@ exports.Readable = class Readable extends stream.Readable {
     super.unshift(chunk)
   }
 
+  static fromWeb(readableStream, opts = {}) {
+    const stream = readableStream._stream
+
+    if (opts.encoding) stream.setEncoding(opts.encoding)
+    if (opts.signal) exports.addAbortSignal(opts.signal, stream)
+
+    return stream
+  }
+
+  static toWeb(readable, opts = {}) {
+    return new ReadableStream(readable, opts.strategy)
+  }
+
   async [Symbol.asyncDispose]() {
     if (!this.destroyed) this.destroy()
 
@@ -163,6 +177,18 @@ exports.Writable = class Writable extends stream.Writable {
     if (cb) this.once('finish', () => cb(null))
 
     return result
+  }
+
+  static fromWeb(writableStream, opts = {}) {
+    const stream = writableStream._stream
+
+    if (opts.signal) exports.addAbortSignal(opts.signal, stream)
+
+    return stream
+  }
+
+  static toWeb(writable) {
+    return new WritableStream(writable)
   }
 
   async [Symbol.asyncDispose]() {
@@ -257,6 +283,33 @@ exports.Duplex = class Duplex extends stream.Duplex {
     if (cb) this.once('finish', () => cb(null))
 
     return result
+  }
+
+  static fromWeb({ readable: readableStream, writable: writableStream }, opts) {
+    const readable = exports.Readable.fromWeb(readableStream, opts)
+    const writable = exports.Readable.fromWeb(writableStream, opts)
+
+    const duplex = new exports.Duplex({
+      write(data, encoding, cb) {
+        writable.write(data, encoding, cb)
+      }
+    })
+
+    readable
+      .on('data', (data) => duplex.push(data))
+      .on('end', () => duplex.push(null))
+      .on('error', (err) => duplex.destroy(err))
+
+    writable.on('finish', () => duplex.end()).on('error', (err) => duplex.destroy(err))
+
+    return duplex
+  }
+
+  static toWeb(duplex) {
+    const readableStream = exports.Readable.toWeb(duplex)
+    const writableStream = exports.Writable.toWeb(duplex)
+
+    return { readable: readableStream, writable: writableStream }
   }
 }
 

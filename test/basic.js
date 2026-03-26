@@ -15,6 +15,7 @@ const {
   duplexPair,
   addAbortSignal
 } = require('..')
+const { ReadableStream, WritableStream } = require('../web')
 
 test('default export', (t) => {
   t.is(require('..'), Stream)
@@ -117,6 +118,99 @@ test('readable, push with encoding', (t) => {
   })
 
   stream.on('data', (data) => t.alike(data, Buffer.from([0xab, 0xcd])))
+})
+
+test('readable, fromWeb', (t) => {
+  t.plan(2)
+
+  const web = new ReadableStream({
+    start(controller) {
+      controller.enqueue(1)
+      controller.enqueue(2)
+      controller.enqueue(3)
+
+      controller.close()
+    }
+  })
+
+  const stream = Readable.fromWeb(web)
+
+  const read = []
+
+  stream
+    .on('data', (data) => read.push(data))
+    .on('end', () => t.alike(read, [1, 2, 3]))
+    .on('close', () => t.pass('closed'))
+    .on('error', () => t.fail())
+})
+
+test('readable, fromWeb, error', (t) => {
+  t.plan(1)
+
+  const web = new ReadableStream({
+    start(controller) {
+      controller.error(new Error('boom!'))
+    }
+  })
+
+  const stream = Readable.fromWeb(web)
+
+  stream.on('error', (err) => t.is(err.message, 'boom!'))
+})
+
+test('readable, fromWeb, signal option', (t) => {
+  t.plan(1)
+
+  const abortController = new AbortController()
+
+  const web = new ReadableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
+
+  const stream = Readable.fromWeb(web, { signal: abortController.signal })
+
+  stream.on('error', (err) => t.is(err.message, 'The operation was aborted'))
+})
+
+test('readable, toWeb', async (t) => {
+  t.plan(5)
+
+  let i = 0
+
+  const readable = new Readable({
+    read(size) {
+      if (i++ === 3) this.push(null)
+      else setTimeout(() => this.push(i))
+    }
+  })
+
+  const reader = Readable.toWeb(readable).getReader()
+
+  t.alike(await reader.read(), { value: 1, done: false })
+  t.alike(await reader.read(), { value: 2, done: false })
+  t.alike(await reader.read(), { value: 3, done: false })
+  t.alike(await reader.read(), { value: undefined, done: true })
+
+  await t.execution(reader.closed, 'reader closed')
+})
+
+test('readable, toWeb, error', async (t) => {
+  t.plan(1)
+
+  const readable = new Readable({
+    read(size) {
+      this.destroy(new Error('boom!'))
+    }
+  })
+
+  const stream = Readable.toWeb(readable)
+
+  t.exception(async () => {
+    for await (const value of stream) {
+    }
+  }, 'boom!')
 })
 
 test('writable', (t) => {
@@ -250,6 +344,84 @@ test('writable, end with data', (t) => {
   })
 
   stream.end('hello')
+})
+
+test('writable, fromWeb', (t) => {
+  t.plan(1)
+
+  const web = new WritableStream({
+    write(chunk, controller) {
+      t.is(chunk, 'foo')
+    }
+  })
+
+  const stream = Writable.fromWeb(web)
+
+  stream.write('foo')
+})
+
+test('writable, fromWeb, error', (t) => {
+  t.plan(1)
+
+  const web = new WritableStream({
+    start(controller) {
+      controller.error(new Error('boom!'))
+    }
+  })
+
+  const stream = Writable.fromWeb(web)
+
+  stream.on('error', (err) => t.is(err.message, 'boom!'))
+})
+
+test('writable, fromWeb, signal option', (t) => {
+  t.plan(1)
+
+  const abortController = new AbortController()
+
+  const web = new WritableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
+
+  const stream = Writable.fromWeb(web, { signal: abortController.signal })
+
+  stream.on('error', (err) => t.is(err.message, 'The operation was aborted'))
+})
+
+test('writable, toWeb', async (t) => {
+  t.plan(1)
+
+  const writable = new Writable({
+    write(data, encoding, cb) {
+      t.alike(data, Buffer.from('foo'))
+
+      cb(null)
+    }
+  })
+
+  const writer = Writable.toWeb(writable).getWriter()
+
+  await writer.write('foo')
+})
+
+test('writable, toWeb, error', async (t) => {
+  t.plan(1)
+
+  const writable = new Writable({
+    write(data, encoding, cb) {
+      cb(new Error('boom!'))
+    }
+  })
+
+  const writer = Writable.toWeb(writable).getWriter()
+
+  try {
+    await writer.write('foo')
+  } catch (err) {
+    t.is(err.message, 'boom!')
+  }
 })
 
 test('duplex', (t) => {
@@ -403,6 +575,51 @@ test('duplex, end', (t) => {
   })
 
   stream.end(() => t.pass())
+})
+
+test('duplex, fromWeb', (t) => {
+  t.plan(2)
+
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue('from readable')
+    }
+  })
+
+  const writable = new WritableStream({
+    write(chunk) {
+      t.alike(chunk, Buffer.from('from writable'))
+    }
+  })
+
+  const duplex = Duplex.fromWeb({ readable, writable })
+
+  duplex.write('from writable')
+
+  duplex.once('readable', () => t.alike(duplex.read(), Buffer.from('from readable')))
+})
+
+test('duplex, toWeb', async (t) => {
+  t.plan(2)
+
+  const duplex = new Duplex({
+    read() {
+      this.push('from readable')
+      this.push(null)
+    },
+    write(chunk, encoding, cb) {
+      t.alike(chunk, Buffer.from('from writable'))
+      cb()
+    }
+  })
+
+  const { readable, writable } = Duplex.toWeb(duplex)
+
+  await writable.getWriter().write('from writable')
+
+  const { value } = await readable.getReader().read()
+
+  t.alike(value, Buffer.from('from readable'))
 })
 
 test('transform', (t) => {

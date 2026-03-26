@@ -322,13 +322,15 @@ exports.WritableStreamDefaultWriter = class WritableStreamDefaultWriter {
   async write(chunk) {
     const stream = this._stream._stream
 
-    const err = getStreamError(stream)
-
+    let err = getStreamError(stream)
     if (err) return Promise.reject(err)
 
     stream.write(chunk)
 
     await Writable.drained(stream)
+
+    err = getStreamError(stream)
+    if (err) return Promise.reject(err)
   }
 
   releaseLock() {
