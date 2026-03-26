@@ -86,12 +86,17 @@ exports.Readable = class Readable extends stream.Readable {
     super.unshift(chunk)
   }
 
-  static fromWeb(readableStream) {
-    return readableStream._stream
+  static fromWeb(readableStream, opts = {}) {
+    const stream = readableStream._stream
+
+    if (opts.encoding) stream.setEncoding(opts.encoding)
+    if (opts.signal) exports.addAbortSignal(opts.signal, stream)
+
+    return stream
   }
 
-  static toWeb(readable, opts) {
-    return new ReadableStream(readable, opts)
+  static toWeb(readable, opts = {}) {
+    return new ReadableStream(readable, opts.strategy)
   }
 
   async [Symbol.asyncDispose]() {
@@ -174,12 +179,16 @@ exports.Writable = class Writable extends stream.Writable {
     return result
   }
 
-  static fromWeb(writableStream) {
-    return writableStream._stream
+  static fromWeb(writableStream, opts = {}) {
+    const stream = writableStream._stream
+
+    if (opts.signal) exports.addAbortSignal(opts.signal, stream)
+
+    return stream
   }
 
-  static toWeb(writable, opts) {
-    return new WritableStream(writable, opts)
+  static toWeb(writable) {
+    return new WritableStream(writable)
   }
 
   async [Symbol.asyncDispose]() {

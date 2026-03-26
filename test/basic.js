@@ -144,7 +144,7 @@ test('readable, fromWeb', (t) => {
     .on('error', () => t.fail())
 })
 
-test('readable, fromWeb, error', async (t) => {
+test('readable, fromWeb, error', (t) => {
   t.plan(1)
 
   const web = new ReadableStream({
@@ -156,6 +156,22 @@ test('readable, fromWeb, error', async (t) => {
   const stream = Readable.fromWeb(web)
 
   stream.on('error', (err) => t.is(err.message, 'boom!'))
+})
+
+test('readable, fromWeb, signal option', (t) => {
+  t.plan(1)
+
+  const abortController = new AbortController()
+
+  const web = new ReadableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
+
+  const stream = Readable.fromWeb(web, { signal: abortController.signal })
+
+  stream.on('error', (err) => t.is(err.message, 'The operation was aborted'))
 })
 
 test('readable, toWeb', async (t) => {
@@ -344,7 +360,7 @@ test('writable, fromWeb', (t) => {
   stream.write('foo')
 })
 
-test('writable, fromWeb, error', async (t) => {
+test('writable, fromWeb, error', (t) => {
   t.plan(1)
 
   const web = new WritableStream({
@@ -356,6 +372,22 @@ test('writable, fromWeb, error', async (t) => {
   const stream = Writable.fromWeb(web)
 
   stream.on('error', (err) => t.is(err.message, 'boom!'))
+})
+
+test('writable, fromWeb, signal option', (t) => {
+  t.plan(1)
+
+  const abortController = new AbortController()
+
+  const web = new WritableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
+
+  const stream = Writable.fromWeb(web, { signal: abortController.signal })
+
+  stream.on('error', (err) => t.is(err.message, 'The operation was aborted'))
 })
 
 test('writable, toWeb', async (t) => {

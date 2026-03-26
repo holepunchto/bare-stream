@@ -51,6 +51,15 @@ interface ReadableOptions<S extends Readable = Readable> extends StreamOptions<S
   read?(this: S, size: number): void
 }
 
+interface ReadableFromWebOptions {
+  encoding?: BufferEncoding
+  signal?: AbortSignal
+}
+
+interface ReadableToWebOptions {
+  strategy?: CustomQueuingStrategy
+}
+
 interface Readable<M extends ReadableEvents = ReadableEvents>
   extends Stream<M>, AsyncIterable<unknown> {
   _read(size: number): void
@@ -79,9 +88,9 @@ declare class Readable<M extends ReadableEvents = ReadableEvents> extends Stream
 
   static isPaused(rs: Readable): boolean
 
-  static fromWeb(readableStream: ReadableStream): Readable
+  static fromWeb(readableStream: ReadableStream, opts?: ReadableFromWebOptions): Readable
 
-  static toWeb(readable: Readable, queuingStrategy?: CustomQueuingStrategy): ReadableStream
+  static toWeb(readable: Readable, opts?: ReadableToWebOptions): ReadableStream
 }
 
 interface WritableEvents extends StreamEvents {
@@ -94,6 +103,10 @@ interface WritableOptions<S extends Writable = Writable> extends StreamOptions<S
   write?(this: S, data: unknown, encoding: StreamEncoding, cb: StreamCallback): void
   writev?(this: S, batch: { chunk: unknown; encoding: StreamEncoding }[], cb: StreamCallback): void
   final?(this: S, cb: StreamCallback): void
+}
+
+interface WritableFromWebOptions {
+  signal?: AbortSignal
 }
 
 interface Writable<M extends WritableEvents = WritableEvents> extends Stream<M> {
@@ -122,9 +135,9 @@ declare class Writable<M extends WritableEvents = WritableEvents> extends Stream
 
   static drained(ws: Writable): Promise<boolean>
 
-  static fromWeb(writableStream: WritableStream): Writable
+  static fromWeb(writableStream: WritableStream, opts?: WritableFromWebOptions): Writable
 
-  static toWeb(writable: Writable, queuingStrategy?: CustomQueuingStrategy): WritableStream
+  static toWeb(writable: Writable): WritableStream
 }
 
 interface DuplexEvents extends ReadableEvents, WritableEvents {}
