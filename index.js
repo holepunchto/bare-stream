@@ -86,29 +86,8 @@ exports.Readable = class Readable extends stream.Readable {
     super.unshift(chunk)
   }
 
-  static fromWeb(readableStream, opts) {
-    const reader = readableStream.getReader()
-
-    const stream = new exports.Readable({
-      ...opts,
-
-      async read(size) {
-        try {
-          const { value, done } = await reader.read()
-
-          if (done) this.push(null)
-          else this.push(value)
-        } catch (err) {
-          this.destroy(err)
-        }
-      }
-    })
-
-    reader.closed.catch((err) => {
-      if (!stream.destroyed) stream.destroy(err)
-    })
-
-    return stream
+  static fromWeb(readableStream) {
+    return readableStream._stream
   }
 
   static toWeb(readable, opts) {
@@ -195,32 +174,8 @@ exports.Writable = class Writable extends stream.Writable {
     return result
   }
 
-  static fromWeb(writableStream, opts) {
-    const writer = writableStream.getWriter()
-
-    const stream = new exports.Writable({
-      ...opts,
-
-      async write(data, cb) {
-        try {
-          await writer.write(data)
-
-          cb(null)
-        } catch (err) {
-          this.destroy(err)
-        }
-      }
-    })
-
-    writer.closed
-      .then(() => {
-        if (!exports.isFinishing(stream)) stream.end()
-      })
-      .catch((err) => {
-        if (!stream.destroyed) stream.destroy(err)
-      })
-
-    return stream
+  static fromWeb(writableStream) {
+    return writableStream._stream
   }
 
   static toWeb(writable, opts) {

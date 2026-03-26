@@ -79,7 +79,7 @@ declare class Readable<M extends ReadableEvents = ReadableEvents> extends Stream
 
   static isPaused(rs: Readable): boolean
 
-  static fromWeb(readableStream: ReadableStream, opts?: ReadableOptions): Readable
+  static fromWeb(readableStream: ReadableStream): Readable
 
   static toWeb(readable: Readable, queuingStrategy?: CustomQueuingStrategy): ReadableStream
 }
@@ -122,7 +122,7 @@ declare class Writable<M extends WritableEvents = WritableEvents> extends Stream
 
   static drained(ws: Writable): Promise<boolean>
 
-  static fromWeb(writableStream: WritableStream, opts?: WritableOptions): Writable
+  static fromWeb(writableStream: WritableStream): Writable
 
   static toWeb(writable: Writable, queuingStrategy?: CustomQueuingStrategy): WritableStream
 }
