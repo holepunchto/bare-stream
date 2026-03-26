@@ -577,6 +577,51 @@ test('duplex, end', (t) => {
   stream.end(() => t.pass())
 })
 
+test('duplex, fromWeb', (t) => {
+  t.plan(2)
+
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue('from readable')
+    }
+  })
+
+  const writable = new WritableStream({
+    write(chunk) {
+      t.alike(chunk, Buffer.from('from writable'))
+    }
+  })
+
+  const duplex = Duplex.fromWeb({ readable, writable })
+
+  duplex.write('from writable')
+
+  duplex.once('readable', () => t.alike(duplex.read(), Buffer.from('from readable')))
+})
+
+test('duplex, toWeb', async (t) => {
+  t.plan(2)
+
+  const duplex = new Duplex({
+    read() {
+      this.push('from readable')
+      this.push(null)
+    },
+    write(chunk, encoding, cb) {
+      t.alike(chunk, Buffer.from('from writable'))
+      cb()
+    }
+  })
+
+  const { readable, writable } = Duplex.toWeb(duplex)
+
+  await writable.getWriter().write('from writable')
+
+  const { value } = await readable.getReader().read()
+
+  t.alike(value, Buffer.from('from readable'))
+})
+
 test('transform', (t) => {
   t.plan(3)
 

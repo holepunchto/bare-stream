@@ -144,10 +144,19 @@ interface DuplexEvents extends ReadableEvents, WritableEvents {}
 
 interface DuplexOptions<S extends Duplex = Duplex> extends ReadableOptions<S>, WritableOptions<S> {}
 
+interface DuplexFromWebOptions extends ReadableFromWebOptions, WritableFromWebOptions {}
+
 interface Duplex<M extends DuplexEvents = DuplexEvents> extends Readable<M>, Writable<M> {}
 
 declare class Duplex<M extends DuplexEvents = DuplexEvents> extends Stream<M> {
   constructor(opts?: DuplexOptions)
+
+  static fromWeb(
+    { readable: ReadableStream, writable: Writable },
+    opts?: DuplexFromWebOptions
+  ): Readable
+
+  static toWeb(readable: Readable, opts?: ReadableToWebOptions): ReadableStream
 }
 
 interface TransformEvents extends DuplexEvents {}

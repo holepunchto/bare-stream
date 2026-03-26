@@ -284,6 +284,46 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
     return result
   }
+
+  static fromWeb({ readable: readableStream, writable: writableStream }, opts) {
+    const readable = exports.Readable.fromWeb(readableStream, opts)
+    const writable = exports.Readable.fromWeb(writableStream, opts)
+
+    const duplex = new exports.Duplex({
+      write(data, encoding, cb) {
+        writable.write(data, encoding, cb)
+      }
+    })
+
+    readable.on('data', (data) => {
+      if (exports.isReadable(duplex)) duplex.push(data)
+    })
+
+    readable.on('end', () => {
+      if (exports.isReadable(duplex)) duplex.push(null)
+    })
+
+    readable.on('error', (err) => {
+      if (!duplex.destroyed) duplex.destroy(err)
+    })
+
+    writable.on('finish', () => {
+      if (exports.isWritable(duplex)) duplex.end()
+    })
+
+    writable.on('error', (err) => {
+      if (!duplex.destroyed) duplex.destroy(err)
+    })
+
+    return duplex
+  }
+
+  static toWeb(duplex) {
+    const readableStream = exports.Readable.toWeb(duplex)
+    const writableStream = exports.Writable.toWeb(duplex)
+
+    return { readable: readableStream, writable: writableStream }
+  }
 }
 
 class DuplexSide extends exports.Duplex {
