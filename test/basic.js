@@ -409,11 +409,13 @@ test('writable, toWeb', async (t) => {
 test('writable, toWeb, error', async (t) => {
   t.plan(1)
 
-  const writable = new Writable()
+  const writable = new Writable({
+    write(data, encoding, cb) {
+      cb(new Error('boom!'))
+    }
+  })
 
   const writer = Writable.toWeb(writable).getWriter()
-
-  writable.destroy(new Error('boom!'))
 
   try {
     await writer.write('foo')
