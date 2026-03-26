@@ -351,7 +351,7 @@ test('writable, fromWeb', (t) => {
 
   const web = new WritableStream({
     write(chunk, controller) {
-      t.alike(chunk, 'foo')
+      t.is(chunk, 'foo')
     }
   })
 
