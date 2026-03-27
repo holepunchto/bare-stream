@@ -3,6 +3,7 @@ const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
 const writableKind = Symbol.for('bare.stream.writable.kind')
+const transformKind = Symbol.for('bare.stream.transform.kind')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -138,14 +139,14 @@ class ReadableStream {
 
       this._stream = new Readable({ highWaterMark, byteLength: size })
 
-      const controller = new exports.ReadableStreamDefaultController(this)
+      this._controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, controller))
+        this._stream._open = this._open.bind(this, start.call(this, this._controller))
       }
 
       if (pull) {
-        this._stream._read = this._read.bind(this, pull.bind(this, controller))
+        this._stream._read = this._read.bind(this, pull.bind(this, this._controller))
       }
 
       if (cancel) {
@@ -484,6 +485,89 @@ exports.isWritableStream = function isWritableStream(value) {
     typeof value === 'object' &&
     value !== null &&
     value[writableKind] === WritableStream[writableKind]
+  )
+}
+
+// https://streams.spec.whatwg.org/#transformstreamdefaultcontroller
+exports.TransformStreamDefaultController = class TransformStreamDefaultController {
+  constructor(stream) {
+    this._stream = stream
+  }
+
+  get desiredSize() {
+    return this._stream._readable._controller.desiredSize
+  }
+
+  enqueue(data) {
+    this._stream._readable._stream.push(data)
+  }
+
+  error(err) {
+    const readable = this._stream._readable._stream
+    const writable = this._stream._writable._stream
+
+    readable.on('error', noop).destroy(err)
+    writable.on('error', noop).destroy(err)
+  }
+
+  terminate() {
+    const readable = this._stream._readable._stream
+    const writable = this._stream._writable._stream
+
+    readable.push(null)
+    writable.destroy(new TypeError('Stream has been terminated'))
+  }
+}
+
+// https://streams.spec.whatwg.org/#transformstream
+class TransformStream {
+  static get [transformKind]() {
+    return 0 // Compatibility version
+  }
+
+  constructor(transformer = {}, writableStrategy, readableStrategy) {
+    const { start, transform, flush } = transformer
+
+    this._writable = new WritableStream({}, writableStrategy)
+    this._readable = new ReadableStream({}, readableStrategy)
+
+    this._controller = new exports.TransformStreamDefaultController(this)
+
+    if (start) {
+      this._readable._open = this._readable._open.bind(this, start.call(this, this._controller))
+    }
+
+    if (transform) {
+      this._writable._stream._write = this._writable._write.bind(this, transform)
+    }
+
+    if (flush) {
+      this._writable._stream._final = flush.bind(this, this._controller)
+    }
+  }
+
+  get [transformKind]() {
+    return TransformStream[transformKind]
+  }
+
+  get writable() {
+    return this._writable
+  }
+
+  get readable() {
+    return this._readable
+  }
+}
+
+exports.TransformStream = TransformStream
+
+exports.isTransformStream = function isTransformStream(value) {
+  if (value instanceof TransformStream) return true
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value[transformKind] === TransformStream[transformKind]
   )
 }
 
