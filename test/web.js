@@ -6,7 +6,9 @@ const {
   isReadableStreamDisturbed,
   isReadableStreamErrored,
   WritableStream,
-  WritableStreamDefaultController
+  WritableStreamDefaultController,
+  TransformStream,
+  TransformStreamDefaultController
 } = require('../web')
 
 test('web, readable', async (t) => {
@@ -41,10 +43,7 @@ test('web, readable, error', async (t) => {
     }
   })
 
-  t.exception(async () => {
-    for await (const value of stream) {
-    }
-  }, 'boom!')
+  await t.exception(stream.getReader().read(), /boom!/)
 })
 
 test('web, readable, cancel', async (t) => {
@@ -532,4 +531,55 @@ test('web, readable.pipeTo(writable)', async (t) => {
   await readable.pipeTo(writable)
 
   t.alike(written, [1, 2, 3])
+})
+
+test('web, transform', async (t) => {
+  t.plan(8)
+
+  const stream = new TransformStream({
+    start(controller) {
+      t.ok(controller instanceof TransformStreamDefaultController)
+    },
+    transform(chunk, controller) {
+      t.is(chunk, 'hello')
+      t.ok(controller instanceof TransformStreamDefaultController)
+
+      const transformed = chunk.toUpperCase()
+      controller.enqueue(transformed)
+    },
+    flush(controller) {
+      t.ok(controller instanceof TransformStreamDefaultController)
+
+      controller.terminate()
+    }
+  })
+
+  const { readable, writable } = stream
+
+  t.ok(readable instanceof ReadableStream)
+  t.ok(writable instanceof WritableStream)
+
+  const writer = writable.getWriter()
+
+  writer.write('hello')
+  writer.close()
+
+  const reader = readable.getReader()
+
+  t.alike(await reader.read(), { done: false, value: 'HELLO' })
+  t.alike(await reader.read(), { done: true, value: undefined })
+})
+
+test('web, transform, error', async (t) => {
+  t.plan(2)
+
+  const stream = new TransformStream({
+    start(controller) {
+      controller.error('boom!')
+    }
+  })
+
+  await t.exception(stream.readable.getReader().read(), /boom!/)
+
+  await t.exception(stream.writable.getWriter().write('foo'), /boom!/)
 })
