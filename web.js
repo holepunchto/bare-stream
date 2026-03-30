@@ -139,14 +139,14 @@ class ReadableStream {
 
       this._stream = new Readable({ highWaterMark, byteLength: size })
 
-      this._controller = new exports.ReadableStreamDefaultController(this)
+      const controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, this._controller))
+        this._stream._open = this._open.bind(this, start.call(this, controller))
       }
 
       if (pull) {
-        this._stream._read = this._read.bind(this, pull.bind(this, this._controller))
+        this._stream._read = this._read.bind(this, pull.bind(this, controller))
       }
 
       if (cancel) {
