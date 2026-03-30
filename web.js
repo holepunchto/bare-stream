@@ -208,23 +208,23 @@ class ReadableStream {
   }
 
   async _open(starting, cb) {
+    let err = null
     try {
       await starting
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 
   async _read(pull, cb) {
+    let err = null
     try {
       await pull()
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 }
 
@@ -446,33 +446,33 @@ class WritableStream {
   }
 
   async _open(starting, cb) {
+    let err = null
     try {
       await starting
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 
   async _write(write, data, cb) {
+    let err = null
     try {
       await write(data, this._controller)
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 
   async _destroy(closing, cb) {
+    let err = null
     try {
       await closing
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 }
 
@@ -558,33 +558,33 @@ class TransformStream {
   }
 
   async _open(starting, cb) {
+    let err = null
     try {
       await starting
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 
   async _transform(transform, data, cb) {
+    let err = null
     try {
       await transform(data, this._controller)
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 
   async _flush(flush, cb) {
+    let err = null
     try {
       await flush
-
-      cb(null)
-    } catch (err) {
-      cb(err)
+    } catch (e) {
+      err = e
     }
+    cb(err)
   }
 }
 
