@@ -549,8 +549,6 @@ test('web, transform', async (t) => {
     },
     flush(controller) {
       t.ok(controller instanceof TransformStreamDefaultController)
-
-      controller.terminate()
     }
   })
 
@@ -570,16 +568,34 @@ test('web, transform', async (t) => {
   t.alike(await reader.read(), { done: true, value: undefined })
 })
 
+test('web, transform, terminate', async (t) => {
+  t.plan(2)
+
+  const stream = new TransformStream({
+    start(controller) {
+      controller.terminate()
+    }
+  })
+
+  const { readable, writable } = stream
+
+  await t.exception.all(readable.getReader().read(), /Stream has been terminated/)
+
+  await t.exception.all(writable.getWriter().write('foo'), /Stream has been terminated/)
+})
+
 test('web, transform, error', async (t) => {
   t.plan(2)
 
   const stream = new TransformStream({
     start(controller) {
-      controller.error('boom!')
+      controller.error(new Error('boom!'))
     }
   })
 
-  await t.exception(stream.readable.getReader().read(), /boom!/)
+  const { readable, writable } = stream
 
-  await t.exception(stream.writable.getWriter().write('foo'), /boom!/)
+  await t.exception(readable.getReader().read(), /boom!/)
+
+  await t.exception(writable.getWriter().write('foo'), /boom!/)
 })

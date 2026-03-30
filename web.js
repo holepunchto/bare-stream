@@ -1,4 +1,4 @@
-const { Readable, Writable, getStreamError, isStreamx, isDisturbed } = require('streamx')
+const { Readable, Writable, Transform, getStreamError, isStreamx, isDisturbed } = require('streamx')
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
@@ -495,27 +495,24 @@ exports.TransformStreamDefaultController = class TransformStreamDefaultControlle
   }
 
   get desiredSize() {
-    return this._stream._readable._controller.desiredSize
+    const stream = this._stream._stream
+
+    return stream._readableState.highWaterMark - stream._readableState.buffered
   }
 
   enqueue(data) {
-    this._stream._readable._stream.push(data)
+    this._stream._stream.push(data)
   }
 
   error(err) {
-    const readable = this._stream._readable._stream
-    const writable = this._stream._writable._stream
-
-    readable.on('error', noop).destroy(err)
-    writable.on('error', noop).destroy(err)
+    this._stream._stream.destroy(err)
   }
 
   terminate() {
-    const readable = this._stream._readable._stream
-    const writable = this._stream._writable._stream
+    const stream = this._stream._stream
 
-    readable.push(null)
-    writable.destroy(new TypeError('Stream has been terminated'))
+    stream.push(null)
+    stream.destroy(new TypeError('Stream has been terminated'))
   }
 }
 
@@ -525,24 +522,26 @@ class TransformStream {
     return 0 // Compatibility version
   }
 
-  constructor(transformer = {}, writableStrategy, readableStrategy) {
+  constructor(transformer = {}, writableStrategy = {}, readableStrategy = {}) {
     const { start, transform, flush } = transformer
 
-    this._writable = new WritableStream({}, writableStrategy)
-    this._readable = new ReadableStream({}, readableStrategy)
+    this._stream = new Transform({ ...writableStrategy, ...readableStrategy })
+
+    this._writable = new WritableStream(this._stream)
+    this._readable = new ReadableStream(this._stream)
 
     this._controller = new exports.TransformStreamDefaultController(this)
 
     if (start) {
-      this._readable._open = this._readable._open.bind(this, start.call(this, this._controller))
+      this._stream._open = this._open.bind(this, start.call(this, this._controller))
     }
 
     if (transform) {
-      this._writable._stream._write = this._writable._write.bind(this, transform)
+      this._stream._write = this._transform.bind(this, transform)
     }
 
     if (flush) {
-      this._writable._stream._final = flush.bind(this, this._controller)
+      this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
     }
   }
 
@@ -556,6 +555,36 @@ class TransformStream {
 
   get readable() {
     return this._readable
+  }
+
+  async _open(starting, cb) {
+    try {
+      await starting
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
+  async _transform(transform, data, cb) {
+    try {
+      await transform(data, this._controller)
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
+  async _flush(flush, cb) {
+    try {
+      await flush
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
   }
 }
 
