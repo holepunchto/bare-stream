@@ -1,8 +1,9 @@
-const { Readable, Writable, getStreamError, isStreamx, isDisturbed } = require('streamx')
+const { Readable, Writable, Transform, getStreamError, isStreamx, isDisturbed } = require('streamx')
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
 const writableKind = Symbol.for('bare.stream.writable.kind')
+const transformKind = Symbol.for('bare.stream.transform.kind')
 
 // https://streams.spec.whatwg.org/#readablestreamdefaultreader
 exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
@@ -484,6 +485,118 @@ exports.isWritableStream = function isWritableStream(value) {
     typeof value === 'object' &&
     value !== null &&
     value[writableKind] === WritableStream[writableKind]
+  )
+}
+
+// https://streams.spec.whatwg.org/#transformstreamdefaultcontroller
+exports.TransformStreamDefaultController = class TransformStreamDefaultController {
+  constructor(stream) {
+    this._stream = stream
+  }
+
+  get desiredSize() {
+    const stream = this._stream._stream
+
+    return stream._readableState.highWaterMark - stream._readableState.buffered
+  }
+
+  enqueue(data) {
+    this._stream._stream.push(data)
+  }
+
+  error(err) {
+    this._stream._stream.destroy(err)
+  }
+
+  terminate() {
+    const stream = this._stream._stream
+
+    stream.push(null)
+    stream.destroy(new TypeError('Stream has been terminated'))
+  }
+}
+
+// https://streams.spec.whatwg.org/#transformstream
+class TransformStream {
+  static get [transformKind]() {
+    return 0 // Compatibility version
+  }
+
+  constructor(transformer = {}, writableStrategy = {}, readableStrategy = {}) {
+    const { start, transform, flush } = transformer
+
+    this._stream = new Transform({ ...writableStrategy, ...readableStrategy })
+
+    this._writable = new WritableStream(this._stream)
+    this._readable = new ReadableStream(this._stream)
+
+    this._controller = new exports.TransformStreamDefaultController(this)
+
+    if (start) {
+      this._stream._open = this._open.bind(this, start.call(this, this._controller))
+    }
+
+    if (transform) {
+      this._stream._write = this._transform.bind(this, transform)
+    }
+
+    if (flush) {
+      this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
+    }
+  }
+
+  get [transformKind]() {
+    return TransformStream[transformKind]
+  }
+
+  get writable() {
+    return this._writable
+  }
+
+  get readable() {
+    return this._readable
+  }
+
+  async _open(starting, cb) {
+    try {
+      await starting
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
+  async _transform(transform, data, cb) {
+    try {
+      await transform(data, this._controller)
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
+  async _flush(flush, cb) {
+    try {
+      await flush
+
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+}
+
+exports.TransformStream = TransformStream
+
+exports.isTransformStream = function isTransformStream(value) {
+  if (value instanceof TransformStream) return true
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    value[transformKind] === TransformStream[transformKind]
   )
 }
 

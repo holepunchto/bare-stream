@@ -117,3 +117,36 @@ export class WritableStream {
 }
 
 export function isWritableStream(value: unknown): value is WritableStream
+
+export interface TransformStreamDefaultController {
+  readonly desiredSize: number
+
+  enqueue(data: unknown): void
+  error(error?: unknown): void
+  terminate(): void
+}
+
+export class TransformStreamDefaultController {
+  constructor(stream: TransformStream)
+}
+
+export interface Transformer<S extends TransformStream = TransformStream> {
+  start?(this: S, controller: TransformStreamDefaultController): void
+  transform?(this: S, chunk: unknown, controller: TransformStreamDefaultController): void
+  flush?(this: S, controller: TransformStreamDefaultController): void
+}
+
+export interface TransformStream {
+  readonly writable: WritableStream
+  readonly readable: ReadableStream
+}
+
+export class TransformStream {
+  constructor(
+    transformer?: Transformer,
+    writableStrategy?: CustomQueuingStrategy,
+    readableStrategy?: CustomQueuingStrategy
+  )
+}
+
+export function isTransformStream(value: unknown): value is TransformStream
