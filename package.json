@@ -24,7 +24,9 @@
     "global.js"
   ],
   "scripts": {
-    "test": "prettier . --check && bare test.js"
+    "format": "prettier --write . && lunte --fix",
+    "lint": "prettier --check . && lunte",
+    "test": "brittle-bare --coverage test.js"
   },
   "repository": {
     "type": "git",
@@ -45,6 +47,7 @@
     "bare-buffer": "^3.0.0",
     "bare-events": "^2.5.4",
     "brittle": "^3.5.2",
+    "lunte": "^1.6.0",
     "prettier": "^3.3.3",
     "prettier-config-holepunch": "^2.0.0"
   },
