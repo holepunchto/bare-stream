@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "constructor-super": "off",
+    "no-use-before-define": "off"
+  }
+}
