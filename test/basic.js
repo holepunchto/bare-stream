@@ -209,6 +209,7 @@ test('readable, toWeb, error', async (t) => {
 
   t.exception(async () => {
     for await (const value of stream) {
+      t.fail()
     }
   }, 'boom!')
 })
@@ -969,7 +970,7 @@ test('duplexPair', (t) => {
 })
 
 test('async disposable', async (t) => {
-  t.plan(2)
+  t.plan(4)
 
   const readable = new Readable()
   const writable = new Writable()
@@ -977,6 +978,9 @@ test('async disposable', async (t) => {
   {
     await using disposableReadable = readable
     await using disposableWritable = writable
+
+    t.ok(disposableReadable)
+    t.ok(disposableWritable)
   }
 
   t.ok(readable.destroyed)
