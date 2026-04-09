@@ -523,26 +523,30 @@ class TransformStream {
   }
 
   constructor(transformer = {}, writableStrategy = {}, readableStrategy = {}) {
-    const { start, transform, flush } = transformer
+    if (isStreamx(transformer)) {
+      this._stream = transformer
+    } else {
+      const { start, transform, flush } = transformer
 
-    this._stream = new Transform({ ...writableStrategy, ...readableStrategy })
+      this._stream = new Transform({ ...writableStrategy, ...readableStrategy })
+
+      this._controller = new exports.TransformStreamDefaultController(this)
+
+      if (start) {
+        this._stream._open = this._open.bind(this, start.call(this, this._controller))
+      }
+
+      if (transform) {
+        this._stream._write = this._transform.bind(this, transform)
+      }
+
+      if (flush) {
+        this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
+      }
+    }
 
     this._writable = new WritableStream(this._stream)
     this._readable = new ReadableStream(this._stream)
-
-    this._controller = new exports.TransformStreamDefaultController(this)
-
-    if (start) {
-      this._stream._open = this._open.bind(this, start.call(this, this._controller))
-    }
-
-    if (transform) {
-      this._stream._write = this._transform.bind(this, transform)
-    }
-
-    if (flush) {
-      this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
-    }
   }
 
   get [transformKind]() {
