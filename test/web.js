@@ -173,6 +173,38 @@ test('web, readable, tee', async (t) => {
   t.alike(await bReader.read(), { value: undefined, done: true })
 })
 
+test('web, readable, fast-forward enqueues', async (t) => {
+  t.plan(2)
+  let awaited = false
+
+  const asyncIterator = async function* () {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    awaited = true
+
+    yield 2
+    yield 3
+  }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      controller.enqueue(1)
+
+      for await (const chunk of asyncIterator()) controller.enqueue(chunk)
+
+      controller.close()
+    }
+  })
+
+  const read = []
+  for await (const value of stream) {
+    if (read.length === 0) t.is(awaited, false)
+
+    read.push(value)
+  }
+
+  t.alike(read, [1, 2, 3])
+})
+
 test('web, readable, only trigger pull after start is finished', async (t) => {
   t.plan(1)
 

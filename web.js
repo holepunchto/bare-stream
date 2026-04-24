@@ -142,7 +142,7 @@ class ReadableStream {
       const controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, controller))
+        this._stream._open = this._open.bind(this, start.bind(this, controller))
       }
 
       if (pull) {
@@ -210,7 +210,7 @@ class ReadableStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting
+      await starting()
     } catch (e) {
       err = e
     }
@@ -390,7 +390,7 @@ class WritableStream {
       this._controller = new exports.WritableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, this._controller))
+        this._stream._open = this._open.bind(this, start.bind(this, this._controller))
       }
 
       if (write) {
@@ -448,7 +448,7 @@ class WritableStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting
+      await starting()
     } catch (e) {
       err = e
     }
@@ -533,7 +533,7 @@ class TransformStream {
       this._controller = new exports.TransformStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, this._controller))
+        this._stream._open = this._open.bind(this, start.bind(this, this._controller))
       }
 
       if (transform) {
@@ -564,7 +564,7 @@ class TransformStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting
+      await starting()
     } catch (e) {
       err = e
     }
