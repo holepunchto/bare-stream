@@ -1,4 +1,4 @@
-const { Readable, Writable, Transform, getStreamError, isStreamx } = require('streamx')
+const { Readable, Writable, Transform, getStreamError, isStreamx, isDisturbed } = require('streamx')
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
@@ -32,8 +32,6 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   read() {
-    this._stream._disturbed = true
-
     const stream = this._stream._stream
 
     return new Promise((resolve, reject) => {
@@ -83,8 +81,6 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   cancel(reason = new TypeError('Stream was cancelled')) {
-    this._stream._disturbed = true
-
     const stream = this._stream._stream
 
     if (stream.destroyed) return Promise.resolve()
@@ -141,12 +137,12 @@ class ReadableStream {
       const { start, pull, cancel } = underlyingSource
       const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-      this._stream = new Readable({ highWaterMark, byteLength: size, eagerOpen: true })
+      this._stream = new Readable({ highWaterMark, byteLength: size })
 
       const controller = new exports.ReadableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.bind(this, controller))
+        this._stream._open = this._open.bind(this, start.call(this, controller))
       }
 
       if (pull) {
@@ -159,7 +155,6 @@ class ReadableStream {
     }
 
     this._reader = null
-    this._disturbed = false
   }
 
   get [readableKind]() {
@@ -179,8 +174,6 @@ class ReadableStream {
   }
 
   cancel(reason = new TypeError('Stream was cancelled')) {
-    this._disturbed = true
-
     const stream = this._stream
 
     if (stream.destroyed) return Promise.resolve()
@@ -217,7 +210,7 @@ class ReadableStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting()
+      await starting
     } catch (e) {
       err = e
     }
@@ -284,7 +277,7 @@ exports.isReadableStreamErrored = function isReadableStreamErrored(stream) {
 
 // https://streams.spec.whatwg.org/#is-readable-stream-disturbed
 exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
-  return stream._disturbed
+  return isDisturbed(stream._stream)
 }
 
 // https://streams.spec.whatwg.org/#writablestreamdefaultwriter
@@ -392,12 +385,12 @@ class WritableStream {
       const { start, write, close, abort } = underlyingSink
       const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-      this._stream = new Writable({ highWaterMark, byteLength: size, eagerOpen: true })
+      this._stream = new Writable({ highWaterMark, byteLength: size })
 
       this._controller = new exports.WritableStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.bind(this, this._controller))
+        this._stream._open = this._open.bind(this, start.call(this, this._controller))
       }
 
       if (write) {
@@ -455,7 +448,7 @@ class WritableStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting()
+      await starting
     } catch (e) {
       err = e
     }
@@ -540,7 +533,7 @@ class TransformStream {
       this._controller = new exports.TransformStreamDefaultController(this)
 
       if (start) {
-        this._stream._open = this._open.bind(this, start.bind(this, this._controller))
+        this._stream._open = this._open.bind(this, start.call(this, this._controller))
       }
 
       if (transform) {
@@ -571,7 +564,7 @@ class TransformStream {
   async _open(starting, cb) {
     let err = null
     try {
-      await starting()
+      await starting
     } catch (e) {
       err = e
     }
