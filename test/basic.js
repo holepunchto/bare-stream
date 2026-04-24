@@ -147,14 +147,11 @@ test('readable, fromWeb', (t) => {
 test('readable, fromWeb, error', (t) => {
   t.plan(1)
 
-  const web = new ReadableStream(
-    {
-      start(controller) {
-        controller.error(new Error('boom!'))
-      }
-    },
-    { eagerOpen: true }
-  )
+  const web = new ReadableStream({
+    start(controller) {
+      controller.error(new Error('boom!'))
+    }
+  })
 
   const stream = Readable.fromWeb(web)
 
@@ -166,14 +163,11 @@ test('readable, fromWeb, signal option', (t) => {
 
   const abortController = new AbortController()
 
-  const web = new ReadableStream(
-    {
-      start(controller) {
-        abortController.abort()
-      }
-    },
-    { eagerOpen: true }
-  )
+  const web = new ReadableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
 
   const stream = Readable.fromWeb(web, { signal: abortController.signal })
 
@@ -370,14 +364,11 @@ test('writable, fromWeb', (t) => {
 test('writable, fromWeb, error', (t) => {
   t.plan(1)
 
-  const web = new WritableStream(
-    {
-      start(controller) {
-        controller.error(new Error('boom!'))
-      }
-    },
-    { eagerOpen: true }
-  )
+  const web = new WritableStream({
+    start(controller) {
+      controller.error(new Error('boom!'))
+    }
+  })
 
   const stream = Writable.fromWeb(web)
 
@@ -389,14 +380,11 @@ test('writable, fromWeb, signal option', (t) => {
 
   const abortController = new AbortController()
 
-  const web = new WritableStream(
-    {
-      start(controller) {
-        abortController.abort()
-      }
-    },
-    { eagerOpen: true }
-  )
+  const web = new WritableStream({
+    start(controller) {
+      abortController.abort()
+    }
+  })
 
   const stream = Writable.fromWeb(web, { signal: abortController.signal })
 

@@ -31,7 +31,6 @@ export interface UnderlyingSource<S extends ReadableStream = ReadableStream> {
 export interface CustomQueuingStrategy {
   highWaterMark?: number
   size?: (chunk: unknown) => number
-  eagerOpen?: boolean
 }
 
 export interface ReadableStream extends AsyncIterable<unknown> {

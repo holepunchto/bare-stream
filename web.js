@@ -1,4 +1,4 @@
-const { Readable, Writable, Transform, getStreamError, isStreamx, isDisturbed } = require('streamx')
+const { Readable, Writable, Transform, getStreamError, isStreamx } = require('streamx')
 const tee = require('teex')
 
 const readableKind = Symbol.for('bare.stream.readable.kind')
@@ -32,6 +32,8 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   read() {
+    this._stream._disturbed = true
+
     const stream = this._stream._stream
 
     return new Promise((resolve, reject) => {
@@ -81,6 +83,8 @@ exports.ReadableStreamDefaultReader = class ReadableStreamDefaultReader {
   }
 
   cancel(reason = new TypeError('Stream was cancelled')) {
+    this._stream._disturbed = true
+
     const stream = this._stream._stream
 
     if (stream.destroyed) return Promise.resolve()
@@ -135,9 +139,9 @@ class ReadableStream {
       }
 
       const { start, pull, cancel } = underlyingSource
-      const { highWaterMark = 1, size = defaultSize, eagerOpen = false } = queuingStrategy
+      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-      this._stream = new Readable({ highWaterMark, byteLength: size, eagerOpen })
+      this._stream = new Readable({ highWaterMark, byteLength: size, eagerOpen: true })
 
       const controller = new exports.ReadableStreamDefaultController(this)
 
@@ -155,6 +159,7 @@ class ReadableStream {
     }
 
     this._reader = null
+    this._disturbed = false
   }
 
   get [readableKind]() {
@@ -174,6 +179,8 @@ class ReadableStream {
   }
 
   cancel(reason = new TypeError('Stream was cancelled')) {
+    this._disturbed = true
+
     const stream = this._stream
 
     if (stream.destroyed) return Promise.resolve()
@@ -277,7 +284,7 @@ exports.isReadableStreamErrored = function isReadableStreamErrored(stream) {
 
 // https://streams.spec.whatwg.org/#is-readable-stream-disturbed
 exports.isReadableStreamDisturbed = function isReadableStreamDisturbed(stream) {
-  return isDisturbed(stream._stream)
+  return stream._disturbed
 }
 
 // https://streams.spec.whatwg.org/#writablestreamdefaultwriter
@@ -383,9 +390,9 @@ class WritableStream {
       }
 
       const { start, write, close, abort } = underlyingSink
-      const { highWaterMark = 1, size = defaultSize, eagerOpen = false } = queuingStrategy
+      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
 
-      this._stream = new Writable({ highWaterMark, byteLength: size, eagerOpen })
+      this._stream = new Writable({ highWaterMark, byteLength: size, eagerOpen: true })
 
       this._controller = new exports.WritableStreamDefaultController(this)
 
