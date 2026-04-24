@@ -9,4 +9,7 @@ global.ByteLengthQueuingStrategy = stream.ByteLengthQueuingStrategy
 
 global.WritableStream = stream.WritableStream
 global.WritableStreamDefaultController = stream.WritableStreamDefaultController
-global.WritableStreamDefaultReader = stream.WritableStreamDefaultReader
+global.WritableStreamDefaultWriter = stream.WritableStreamDefaultWriter
+
+global.TransformStream = stream.TransformStream
+global.TransformStreamDefaultController = stream.TransformStreamDefaultController
