@@ -372,7 +372,7 @@ test('web, readable, custom size function', async (t) => {
   reader.read()
 })
 
-test('web, isReadableStreamDistured', async (t) => {
+test('web, isReadableStreamDisturbed', async (t) => {
   t.plan(3)
 
   const stream = new ReadableStream({
@@ -396,7 +396,7 @@ test('web, isReadableStreamDistured', async (t) => {
   reader.cancel()
 })
 
-test('web, isReadableStreamDistured, cancel', async (t) => {
+test('web, isReadableStreamDisturbed, cancel', async (t) => {
   t.plan(2)
 
   const stream = new ReadableStream({

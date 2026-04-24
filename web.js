@@ -135,9 +135,9 @@ class ReadableStream {
       }
 
       const { start, pull, cancel } = underlyingSource
-      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
+      const { highWaterMark = 1, size = defaultSize, eagerOpen = false } = queuingStrategy
 
-      this._stream = new Readable({ highWaterMark, byteLength: size })
+      this._stream = new Readable({ highWaterMark, byteLength: size, eagerOpen })
 
       const controller = new exports.ReadableStreamDefaultController(this)
 
@@ -383,9 +383,9 @@ class WritableStream {
       }
 
       const { start, write, close, abort } = underlyingSink
-      const { highWaterMark = 1, size = defaultSize } = queuingStrategy
+      const { highWaterMark = 1, size = defaultSize, eagerOpen = false } = queuingStrategy
 
-      this._stream = new Writable({ highWaterMark, byteLength: size })
+      this._stream = new Writable({ highWaterMark, byteLength: size, eagerOpen })
 
       this._controller = new exports.WritableStreamDefaultController(this)
 

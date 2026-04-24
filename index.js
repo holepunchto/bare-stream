@@ -92,8 +92,6 @@ exports.Readable = class Readable extends stream.Readable {
     if (opts.encoding) stream.setEncoding(opts.encoding)
     if (opts.signal) exports.addAbortSignal(opts.signal, stream)
 
-    stream.resume()
-
     return stream
   }
 
@@ -185,8 +183,6 @@ exports.Writable = class Writable extends stream.Writable {
     const stream = writableStream._stream
 
     if (opts.signal) exports.addAbortSignal(opts.signal, stream)
-
-    stream._writableState.updateNextTick()
 
     return stream
   }
