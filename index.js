@@ -92,6 +92,8 @@ exports.Readable = class Readable extends stream.Readable {
     if (opts.encoding) stream.setEncoding(opts.encoding)
     if (opts.signal) exports.addAbortSignal(opts.signal, stream)
 
+    stream.resume()
+
     return stream
   }
 
@@ -183,6 +185,8 @@ exports.Writable = class Writable extends stream.Writable {
     const stream = writableStream._stream
 
     if (opts.signal) exports.addAbortSignal(opts.signal, stream)
+
+    stream._writableState.updateNextTick()
 
     return stream
   }
@@ -287,7 +291,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
   static fromWeb({ readable: readableStream, writable: writableStream }, opts) {
     const readable = exports.Readable.fromWeb(readableStream, opts)
-    const writable = exports.Readable.fromWeb(writableStream, opts)
+    const writable = exports.Writable.fromWeb(writableStream, opts)
 
     const duplex = new exports.Duplex({
       write(data, encoding, cb) {
