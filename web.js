@@ -141,12 +141,15 @@ class ReadableStream {
 
       const controller = new exports.ReadableStreamDefaultController(this)
 
+      let startCall
+
       if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, controller))
+        startCall = start.call(this, controller)
+        this._stream._open = this._open.bind(this, startCall)
       }
 
       if (pull) {
-        this._stream._read = this._read.bind(this, pull.bind(this, controller))
+        this._stream._read = this._read.bind(this, pull.bind(this, controller), startCall)
       }
 
       if (cancel) {
@@ -207,17 +210,19 @@ class ReadableStream {
     this._reader = null
   }
 
-  async _open(starting, cb) {
+  _open(starting, cb) {
     let err = null
     try {
-      await starting
+      starting
     } catch (e) {
       err = e
     }
     cb(err)
   }
 
-  async _read(pull, cb) {
+  async _read(pull, start, cb) {
+    if (start) await start.catch()
+
     let err = null
     try {
       await pull()
