@@ -46,6 +46,30 @@ test('web, readable, error', async (t) => {
   await t.exception(stream.getReader().read(), /boom!/)
 })
 
+test('web, readable, start throws', async (t) => {
+  t.plan(1)
+
+  const stream = new ReadableStream({
+    start() {
+      throw new Error('boom!')
+    }
+  })
+
+  await t.exception(stream.getReader().read(), /boom!/)
+})
+
+test('web, readable, async start rejects', async (t) => {
+  t.plan(1)
+
+  const stream = new ReadableStream({
+    async start() {
+      throw new Error('boom!')
+    }
+  })
+
+  await t.exception(stream.getReader().read(), /boom!/)
+})
+
 test('web, readable, cancel', async (t) => {
   t.plan(2)
 
@@ -475,6 +499,34 @@ test('web, writable, error', async (t) => {
   await t.exception(writer.write('foo'), /boom!/)
 })
 
+test('web, writable, start throws', async (t) => {
+  t.plan(1)
+
+  const stream = new WritableStream({
+    start() {
+      throw new Error('boom!')
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await t.exception(writer.write('foo'), /boom!/)
+})
+
+test('web, writable, async start rejects', async (t) => {
+  t.plan(1)
+
+  const stream = new WritableStream({
+    async start() {
+      throw new Error('boom!')
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await t.exception(writer.write('foo'), /boom!/)
+})
+
 test('web, writable, close', async (t) => {
   t.plan(1)
 
@@ -523,6 +575,26 @@ test('web, writable, locked', async (t) => {
   await t.exception.all(writer.closed)
 
   t.is(stream.locked, false)
+})
+
+test('web, writable, only trigger write after start is finished', async (t) => {
+  t.plan(1)
+
+  let foo
+
+  const stream = new WritableStream({
+    async start(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      foo = 42
+    },
+    write(chunk, controller) {
+      t.is(foo, 42)
+    }
+  })
+
+  const writer = stream.getWriter()
+
+  await writer.write('hello')
 })
 
 test('web, writable, ready', async (t) => {
@@ -600,6 +672,30 @@ test('web, transform', async (t) => {
   t.alike(await reader.read(), { done: true, value: undefined })
 })
 
+test('web, transform, only trigger transform after start is finished', async (t) => {
+  t.plan(1)
+
+  let foo
+
+  const stream = new TransformStream({
+    async start(controller) {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      foo = 42
+    },
+    transform(chunk, controller) {
+      t.is(foo, 42)
+      controller.enqueue(chunk)
+    }
+  })
+
+  const writer = stream.writable.getWriter()
+  const reader = stream.readable.getReader()
+
+  writer.write('hello')
+
+  await reader.read()
+})
+
 test('web, transform, terminate', async (t) => {
   t.plan(2)
 
@@ -622,6 +718,38 @@ test('web, transform, error', async (t) => {
   const stream = new TransformStream({
     start(controller) {
       controller.error(new Error('boom!'))
+    }
+  })
+
+  const { readable, writable } = stream
+
+  await t.exception(readable.getReader().read(), /boom!/)
+
+  await t.exception(writable.getWriter().write('foo'), /boom!/)
+})
+
+test('web, transform, start throws', async (t) => {
+  t.plan(2)
+
+  const stream = new TransformStream({
+    start() {
+      throw new Error('boom!')
+    }
+  })
+
+  const { readable, writable } = stream
+
+  await t.exception(readable.getReader().read(), /boom!/)
+
+  await t.exception(writable.getWriter().write('foo'), /boom!/)
+})
+
+test('web, transform, async start rejects', async (t) => {
+  t.plan(2)
+
+  const stream = new TransformStream({
+    async start() {
+      throw new Error('boom!')
     }
   })
 
