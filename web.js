@@ -141,16 +141,20 @@ class ReadableStream {
 
       const controller = new exports.ReadableStreamDefaultController(this)
 
-      if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, controller))
-      }
+      try {
+        let starting = Promise.resolve()
 
-      if (pull) {
-        this._stream._read = this._read.bind(this, pull.bind(this, controller))
-      }
+        if (start) starting = forwardError(start.call(this, controller), controller)
 
-      if (cancel) {
-        this._stream.once('error', cancel)
+        if (pull) {
+          this._stream._read = this._read.bind(this, starting, pull.bind(this, controller))
+        }
+
+        if (cancel) {
+          this._stream.once('error', cancel.bind(this))
+        }
+      } catch (err) {
+        controller.error(err)
       }
     }
 
@@ -207,17 +211,9 @@ class ReadableStream {
     this._reader = null
   }
 
-  async _open(starting, cb) {
-    let err = null
-    try {
-      await starting
-    } catch (e) {
-      err = e
-    }
-    cb(err)
-  }
+  async _read(starting, pull, cb) {
+    await starting
 
-  async _read(pull, cb) {
     let err = null
     try {
       await pull()
@@ -387,22 +383,28 @@ class WritableStream {
 
       this._stream = new Writable({ highWaterMark, byteLength: size })
 
-      this._controller = new exports.WritableStreamDefaultController(this)
+      const controller = new exports.WritableStreamDefaultController(this)
 
-      if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, this._controller))
-      }
+      this._controller = controller
 
-      if (write) {
-        this._stream._write = this._write.bind(this, write)
-      }
+      try {
+        let starting = Promise.resolve()
 
-      if (close) {
-        this._stream._destroy = this._destroy.bind(this, close.call(this))
-      }
+        if (start) starting = forwardError(start.call(this, controller), controller)
 
-      if (abort) {
-        this._stream.once('error', abort)
+        if (write) {
+          this._stream._write = this._write.bind(this, starting, write.bind(this))
+        }
+
+        if (close) {
+          this._stream._destroy = this._destroy.bind(this, close.call(this))
+        }
+
+        if (abort) {
+          this._stream.once('error', abort.bind(this))
+        }
+      } catch (err) {
+        controller.error(err)
       }
     }
 
@@ -445,17 +447,9 @@ class WritableStream {
     this._writer = null
   }
 
-  async _open(starting, cb) {
-    let err = null
-    try {
-      await starting
-    } catch (e) {
-      err = e
-    }
-    cb(err)
-  }
+  async _write(starting, write, data, cb) {
+    await starting
 
-  async _write(write, data, cb) {
     let err = null
     try {
       await write(data, this._controller)
@@ -530,18 +524,24 @@ class TransformStream {
 
       this._stream = new Transform({ ...writableStrategy, ...readableStrategy })
 
-      this._controller = new exports.TransformStreamDefaultController(this)
+      const controller = new exports.TransformStreamDefaultController(this)
 
-      if (start) {
-        this._stream._open = this._open.bind(this, start.call(this, this._controller))
-      }
+      this._controller = controller
 
-      if (transform) {
-        this._stream._write = this._transform.bind(this, transform)
-      }
+      try {
+        let starting = Promise.resolve()
 
-      if (flush) {
-        this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
+        if (start) starting = forwardError(start.call(this, controller), controller)
+
+        if (transform) {
+          this._stream._transform = this._transform.bind(this, starting, transform.bind(this))
+        }
+
+        if (flush) {
+          this._stream._flush = this._flush.bind(this, flush.call(this, this._controller))
+        }
+      } catch (err) {
+        controller.error(err)
       }
     }
 
@@ -561,17 +561,9 @@ class TransformStream {
     return this._readable
   }
 
-  async _open(starting, cb) {
-    let err = null
-    try {
-      await starting
-    } catch (e) {
-      err = e
-    }
-    cb(err)
-  }
+  async _transform(starting, transform, data, cb) {
+    await starting
 
-  async _transform(transform, data, cb) {
     let err = null
     try {
       await transform(data, this._controller)
@@ -602,6 +594,14 @@ exports.isTransformStream = function isTransformStream(value) {
     value !== null &&
     value[transformKind] === TransformStream[transformKind]
   )
+}
+
+async function forwardError(promise, controller) {
+  try {
+    await promise
+  } catch (err) {
+    controller.error(err)
+  }
 }
 
 function noop() {}

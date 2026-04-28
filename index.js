@@ -287,7 +287,7 @@ exports.Duplex = class Duplex extends stream.Duplex {
 
   static fromWeb({ readable: readableStream, writable: writableStream }, opts) {
     const readable = exports.Readable.fromWeb(readableStream, opts)
-    const writable = exports.Readable.fromWeb(writableStream, opts)
+    const writable = exports.Writable.fromWeb(writableStream, opts)
 
     const duplex = new exports.Duplex({
       write(data, encoding, cb) {

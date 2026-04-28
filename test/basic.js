@@ -589,7 +589,7 @@ test('duplex, fromWeb', (t) => {
 
   const writable = new WritableStream({
     write(chunk) {
-      t.alike(chunk, Buffer.from('from writable'))
+      t.alike(chunk, Buffer.from('from writable'), 'write')
     }
   })
 
@@ -597,7 +597,7 @@ test('duplex, fromWeb', (t) => {
 
   duplex.write('from writable')
 
-  duplex.once('readable', () => t.alike(duplex.read(), Buffer.from('from readable')))
+  duplex.once('readable', () => t.alike(duplex.read(), Buffer.from('from readable'), 'read'))
 })
 
 test('duplex, toWeb', async (t) => {
