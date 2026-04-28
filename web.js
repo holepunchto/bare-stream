@@ -144,7 +144,7 @@ class ReadableStream {
       try {
         let starting = Promise.resolve()
 
-        if (start) starting = abortOnError(start.call(this, controller), controller)
+        if (start) starting = forwardError(start.call(this, controller), controller)
 
         if (pull) {
           this._stream._read = this._read.bind(this, starting, pull.bind(this, controller))
@@ -390,7 +390,7 @@ class WritableStream {
       try {
         let starting = Promise.resolve()
 
-        if (start) starting = abortOnError(start.call(this, controller), controller)
+        if (start) starting = forwardError(start.call(this, controller), controller)
 
         if (write) {
           this._stream._write = this._write.bind(this, starting, write.bind(this))
@@ -531,7 +531,7 @@ class TransformStream {
       try {
         let starting = Promise.resolve()
 
-        if (start) starting = abortOnError(start.call(this, controller), controller)
+        if (start) starting = forwardError(start.call(this, controller), controller)
 
         if (transform) {
           this._stream._transform = this._transform.bind(this, starting, transform.bind(this))
@@ -596,7 +596,7 @@ exports.isTransformStream = function isTransformStream(value) {
   )
 }
 
-async function abortOnError(promise, controller) {
+async function forwardError(promise, controller) {
   try {
     await promise
   } catch (err) {
