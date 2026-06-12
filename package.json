@@ -43,6 +43,7 @@
   },
   "homepage": "https://github.com/holepunchto/bare-stream#readme",
   "dependencies": {
+    "b4a": "^1.8.1",
     "streamx": "^2.25.0",
     "teex": "^1.0.1"
   },
