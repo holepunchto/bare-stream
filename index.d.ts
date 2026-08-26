@@ -17,6 +17,7 @@ interface StreamEvents extends EventMap {
 
 interface StreamOptions<S extends Stream = Stream> {
   eagerOpen?: boolean
+  highWaterMark?: number
   signal?: AbortSignal
   open?(this: S, cb: StreamCallback): void
   predestroy?(this: S): void
@@ -47,7 +48,6 @@ interface ReadableEvents extends StreamEvents {
 
 interface ReadableOptions<S extends Readable = Readable> extends StreamOptions<S> {
   encoding?: BufferEncoding
-  highWaterMark?: number
   read?(this: S, size: number): void
 }
 
